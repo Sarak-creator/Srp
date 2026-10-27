@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { StorageService } from '@/lib/storage';
+import { SupabaseSync } from '@/lib/supabase-sync';
 import {
   Product,
   Customer,
@@ -99,12 +100,26 @@ export default function AppHome() {
     }
   };
 
+  const handleDeleteOrder = (orderId: string) => {
+    const updated = orders.filter((o) => o.id !== orderId);
+    setOrders(updated);
+    StorageService.saveOrders(updated);
+    SupabaseSync.deleteOrder(orderId);
+  };
+
   // Customers Handlers
   const handleSaveCustomer = (cust: Customer) => {
     const exists = customers.some((c) => c.id === cust.id);
     const updated = exists ? customers.map((c) => (c.id === cust.id ? cust : c)) : [cust, ...customers];
     setCustomers(updated);
     StorageService.saveCustomers(updated);
+  };
+
+  const handleDeleteCustomer = (customerId: string) => {
+    const updated = customers.filter((c) => c.id !== customerId);
+    setCustomers(updated);
+    StorageService.saveCustomers(updated);
+    SupabaseSync.deleteCustomer(customerId);
   };
 
   const handleAdjustBottleBalance = (customerId: string, delta: number, reason: string) => {
@@ -129,6 +144,13 @@ export default function AppHome() {
     StorageService.saveProducts(updated);
   };
 
+  const handleDeleteProduct = (productId: string) => {
+    const updated = products.filter((p) => p.id !== productId);
+    setProducts(updated);
+    StorageService.saveProducts(updated);
+    SupabaseSync.deleteProduct(productId);
+  };
+
   // Broken Products Handlers
   const handleAddBroken = (record: BrokenProduct) => {
     const updated = [record, ...brokenProducts];
@@ -140,6 +162,7 @@ export default function AppHome() {
     const updated = brokenProducts.filter((b) => b.id !== id);
     setBrokenProducts(updated);
     StorageService.saveBrokenProducts(updated);
+    SupabaseSync.deleteBroken(id);
   };
 
   // Expenses Handlers
@@ -153,6 +176,7 @@ export default function AppHome() {
     const updated = expenses.filter((e) => e.id !== id);
     setExpenses(updated);
     StorageService.saveExpenses(updated);
+    SupabaseSync.deleteExpense(id);
   };
 
   // Suppliers Handlers
@@ -167,6 +191,7 @@ export default function AppHome() {
     const updated = suppliers.filter((s) => s.id !== id);
     setSuppliers(updated);
     StorageService.saveSuppliers(updated);
+    SupabaseSync.deleteSupplier(id);
   };
 
   // Debt Payment Handler
@@ -185,6 +210,28 @@ export default function AppHome() {
       const updatedCustomers = customers.map((c) => (c.id === cust.id ? updatedCust : c));
       setCustomers(updatedCustomers);
       StorageService.saveCustomers(updatedCustomers);
+    }
+  };
+
+  const handleDeletePayment = (paymentId: string) => {
+    const target = payments.find((p) => p.id === paymentId);
+    const updated = payments.filter((p) => p.id !== paymentId);
+    setPayments(updated);
+    StorageService.savePayments(updated);
+    SupabaseSync.deletePayment(paymentId);
+
+    // Revert debt back to customer
+    if (target) {
+      const cust = customers.find((c) => c.id === target.customerId);
+      if (cust) {
+        const updatedCust: Customer = {
+          ...cust,
+          totalDebtUsd: Number((cust.totalDebtUsd + target.equivalentUsd).toFixed(2)),
+        };
+        const updatedCustomers = customers.map((c) => (c.id === cust.id ? updatedCust : c));
+        setCustomers(updatedCustomers);
+        StorageService.saveCustomers(updatedCustomers);
+      }
     }
   };
 
@@ -277,6 +324,7 @@ export default function AppHome() {
               orders={orders}
               settings={settings}
               onCancelOrder={handleCancelOrder}
+              onDeleteOrder={handleDeleteOrder}
             />
           )}
 
@@ -285,6 +333,7 @@ export default function AppHome() {
               products={products}
               settings={settings}
               onSaveProduct={handleSaveProduct}
+              onDeleteProduct={handleDeleteProduct}
             />
           )}
 
@@ -304,6 +353,7 @@ export default function AppHome() {
               settings={settings}
               onSaveCustomer={handleSaveCustomer}
               onAdjustBottleBalance={handleAdjustBottleBalance}
+              onDeleteCustomer={handleDeleteCustomer}
             />
           )}
 
@@ -314,6 +364,7 @@ export default function AppHome() {
               settings={settings}
               activeUser={activeUser}
               onRecordPayment={handleRecordPayment}
+              onDeletePayment={handleDeletePayment}
             />
           )}
 

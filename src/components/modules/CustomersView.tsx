@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Search,
   CheckCircle,
+  Trash2,
 } from 'lucide-react';
 import { Customer, SystemSettings } from '@/types/water-factory';
 import { formatUsd, formatKhr, usdToKhr } from '@/lib/financial-engine';
@@ -20,6 +21,7 @@ interface CustomersViewProps {
   settings: SystemSettings;
   onSaveCustomer: (customer: Customer) => void;
   onAdjustBottleBalance: (customerId: string, delta: number, reason: string) => void;
+  onDeleteCustomer: (customerId: string) => void;
 }
 
 export const CustomersView: React.FC<CustomersViewProps> = ({
@@ -27,6 +29,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   settings,
   onSaveCustomer,
   onAdjustBottleBalance,
+  onDeleteCustomer,
 }) => {
   const [search, setSearch] = useState('');
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -165,12 +168,25 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                   </span>
                   <h3 className="text-sm font-bold text-white mt-1.5">{cust.fullName}</h3>
                 </div>
-                <button
-                  onClick={() => openEditModal(cust)}
-                  className="px-2 py-1 text-[11px] text-slate-400 hover:text-white bg-slate-800 rounded-lg"
-                >
-                  កែប្រែ
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => openEditModal(cust)}
+                    className="px-2 py-1 text-[11px] text-slate-400 hover:text-white bg-slate-800 rounded-lg"
+                  >
+                    កែប្រែ
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(`តើអ្នកពិតជាចង់លុបអតិថិជន "${cust.fullName}" មែនទេ?`)) {
+                        onDeleteCustomer(cust.id);
+                      }
+                    }}
+                    className="p-1 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-500 hover:text-rose-400 transition"
+                    title="លុបអតិថិជន"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               <div className="mt-3 space-y-1.5 text-xs text-slate-400">

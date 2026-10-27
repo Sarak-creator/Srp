@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Printer, Ban, Receipt, CheckCircle, Clock } from 'lucide-react';
+import { Search, Printer, Ban, Receipt, CheckCircle, Clock, Trash2 } from 'lucide-react';
 import { Order, SystemSettings } from '@/types/water-factory';
 import { formatUsd, formatKhr } from '@/lib/financial-engine';
 import { ThermalReceiptModal } from '../pos/ThermalReceiptModal';
@@ -10,12 +10,14 @@ interface OrderHistoryViewProps {
   orders: Order[];
   settings: SystemSettings;
   onCancelOrder: (orderId: string) => void;
+  onDeleteOrder: (orderId: string) => void;
 }
 
 export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({
   orders,
   settings,
   onCancelOrder,
+  onDeleteOrder,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -144,12 +146,23 @@ export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({
                           {!isCancelled && (
                             <button
                               onClick={() => onCancelOrder(order.id)}
-                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition"
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-amber-900/40 text-slate-400 hover:text-amber-400 transition"
                               title="លុបចោលវិក្កយបត្រ (Cancel)"
                             >
                               <Ban className="w-3.5 h-3.5" />
                             </button>
                           )}
+                          <button
+                            onClick={() => {
+                              if (confirm(`តើអ្នកពិតជាចង់លុបទិន្នន័យវិក្កយបត្រ "${order.invoiceNumber}" មែនទេ?`)) {
+                                onDeleteOrder(order.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-500 hover:text-rose-400 transition"
+                            title="លុបវិក្កយបត្រជាស្ថាពរ (Delete)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>

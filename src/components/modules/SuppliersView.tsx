@@ -80,8 +80,13 @@ export const SuppliersView: React.FC<SuppliersViewProps> = ({
                   <Wrench className="w-5 h-5" />
                 </div>
                 <button
-                  onClick={() => onDeleteSupplier(sup.id)}
+                  onClick={() => {
+                    if (confirm(`តើអ្នកពិតជាចង់លុបអ្នកផ្គត់ផ្គង់ "${sup.supplierName}" នេះមែនទេ?`)) {
+                      onDeleteSupplier(sup.id);
+                    }
+                  }}
                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-500 hover:text-rose-400 transition"
+                  title="លុបអ្នកផ្គត់ផ្គង់"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

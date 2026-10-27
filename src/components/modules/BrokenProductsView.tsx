@@ -142,8 +142,13 @@ export const BrokenProductsView: React.FC<BrokenProductsViewProps> = ({
                     <td className="py-3 px-4 text-slate-400">{item.reportedBy}</td>
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => onDeleteBroken(item.id)}
+                        onClick={() => {
+                          if (confirm(`តើអ្នកពិតជាចង់លុបកំណត់ត្រាខូចខាត "${item.productNameKh}" ចំនួន ${item.quantity} នេះមែនទេ?`)) {
+                            onDeleteBroken(item.id);
+                          }
+                        }}
                         className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-500 hover:text-rose-400 transition"
+                        title="លុបកំណត់ត្រាបែកបាក់"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

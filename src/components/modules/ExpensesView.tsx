@@ -164,8 +164,13 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     <td className="py-3 px-4 text-slate-400">{item.approvedBy}</td>
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => onDeleteExpense(item.id)}
+                        onClick={() => {
+                          if (confirm(`តើអ្នកពិតជាចង់លុបចំណាយ "${item.title}" នេះមែនទេ?`)) {
+                            onDeleteExpense(item.id);
+                          }
+                        }}
                         className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-500 hover:text-rose-400 transition"
+                        title="លុបកំណត់ត្រាចំណាយ"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

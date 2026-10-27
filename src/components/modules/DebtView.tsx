@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CreditCard, DollarSign, CheckCircle2, History, ArrowDownLeft } from 'lucide-react';
+import { CreditCard, DollarSign, CheckCircle2, History, ArrowDownLeft, Trash2 } from 'lucide-react';
 import { Customer, CustomerPayment, PaymentMethod, SystemSettings, UserAccount } from '@/types/water-factory';
 import { formatUsd, formatKhr, khrToUsd, usdToKhr } from '@/lib/financial-engine';
 
@@ -11,6 +11,7 @@ interface DebtViewProps {
   settings: SystemSettings;
   activeUser: UserAccount;
   onRecordPayment: (payment: CustomerPayment) => void;
+  onDeletePayment: (paymentId: string) => void;
 }
 
 export const DebtView: React.FC<DebtViewProps> = ({
@@ -19,6 +20,7 @@ export const DebtView: React.FC<DebtViewProps> = ({
   settings,
   activeUser,
   onRecordPayment,
+  onDeletePayment,
 }) => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [payAmountUsd, setPayAmountUsd] = useState('');
@@ -182,13 +184,26 @@ export const DebtView: React.FC<DebtViewProps> = ({
                     {new Date(pay.paymentDate).toLocaleString('km-KH')} • បង់តាម {pay.paymentMethod}
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="font-bold text-emerald-400">
-                    +{formatUsd(pay.equivalentUsd)}
-                  </span>
-                  <p className="text-[10px] text-slate-500">
-                    {pay.amountPaidKhr > 0 ? `${pay.amountPaidKhr.toLocaleString()} ៛` : ''}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="font-bold text-emerald-400">
+                      +{formatUsd(pay.equivalentUsd)}
+                    </span>
+                    <p className="text-[10px] text-slate-500">
+                      {pay.amountPaidKhr > 0 ? `${pay.amountPaidKhr.toLocaleString()} ៛` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (confirm(`តើអ្នកពិតជាចង់លុបប្រវត្តិទូទាត់ "${pay.receiptNumber}" នេះមែនទេ?`)) {
+                        onDeletePayment(pay.id);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-900/40 text-slate-500 hover:text-rose-400 transition"
+                    title="លុបប្រវត្តិទូទាត់"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
