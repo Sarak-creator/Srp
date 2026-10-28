@@ -17,6 +17,8 @@ import {
   RotateCcw,
   ShoppingCart,
   Package,
+  Check,
+  Barcode,
 } from 'lucide-react';
 import {
   Product,
@@ -27,6 +29,7 @@ import {
   PaymentStatus,
   SystemSettings,
   UserAccount,
+  ContainerUnitItem,
 } from '@/types/water-factory';
 import { generateUuid } from '@/lib/supabase-service';
 import {
@@ -38,12 +41,14 @@ import {
   roundKhr,
 } from '@/lib/financial-engine';
 import { ThermalReceiptModal } from '../pos/ThermalReceiptModal';
+import { ProductVisual } from '@/components/common/ProductVisual';
 
 interface PosViewProps {
   products: Product[];
   customers: Customer[];
   settings: SystemSettings;
   activeUser: UserAccount;
+  containerUnits?: ContainerUnitItem[];
   onCompleteOrder: (order: Order, updatedCustomer?: Customer) => void;
   onAddCustomer: (newCustomer: Customer) => void;
 }
@@ -57,6 +62,7 @@ export const PosView: React.FC<PosViewProps> = ({
   customers,
   settings,
   activeUser,
+  containerUnits = [],
   onCompleteOrder,
   onAddCustomer,
 }) => {
@@ -97,6 +103,23 @@ export const PosView: React.FC<PosViewProps> = ({
   const numDiscount = parseFloat(discountUsd) || 0;
   const grandTotalUsd = Math.max(0, Number((subtotalUsd - numDiscount).toFixed(2)));
   const grandTotalKhr = usdToKhr(grandTotalUsd, settings.exchangeRateKhrPerUsd);
+
+  const getUnitLabel = (u: string) => {
+    const found = containerUnits.find((item) => item.code === u);
+    if (found) return found.nameKh;
+    switch (u) {
+      case 'container_20l':
+        return 'ធុង ២០L';
+      case 'pack_350ml':
+        return 'យួរ ៣៥០ml';
+      case 'pack_500ml':
+        return 'យួរ ៥០០ml';
+      case 'pack_1500ml':
+        return 'យួរ ១.៥L';
+      default:
+        return u;
+    }
+  };
 
   // Filter products by search
   const filteredProducts = products.filter(
@@ -383,8 +406,8 @@ export const PosView: React.FC<PosViewProps> = ({
             </span>
           </div>
 
-          {/* Product Cards Grid */}
-          <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+          {/* Product Cards Grid - MyPOS Inspired Product Showcase */}
+          <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 sm:grid-cols-3 gap-3">
             {filteredProducts.map((product) => {
               const is20L = product.isRefill20l;
               const retailPrice = product.retailPriceKhr || product.salePriceKhr || 0;
@@ -392,42 +415,101 @@ export const PosView: React.FC<PosViewProps> = ({
               const activePrice =
                 priceMode === 'wholesale' && wholesalePrice > 0 ? wholesalePrice : retailPrice;
 
+              const cartItem = cart.find((i) => i.productId === product.id);
+              const cartQuantity = cartItem ? cartItem.quantity : 0;
+              const isInCart = cartQuantity > 0;
+
               return (
-                <button
+                <article
                   key={product.id}
                   onClick={() => handleAddToCart(product)}
-                  className="group relative flex flex-col justify-between p-3 sm:p-3.5 rounded-2xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/80 transition-all text-left shadow-sm active:scale-98"
+                  className={`group relative flex flex-col justify-between p-3 sm:p-3.5 rounded-3xl border text-left transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${
+                    isInCart
+                      ? 'bg-slate-900 border-cyan-500/80 shadow-lg shadow-cyan-950/40 ring-1 ring-cyan-500/30'
+                      : 'bg-slate-900/90 hover:bg-slate-900 border-slate-800 hover:border-cyan-500/50 shadow-sm hover:shadow-md'
+                  }`}
                 >
-                  {/* 20L Badge Indicator */}
-                  {is20L && (
-                    <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                      សំបក ២០L
-                    </span>
-                  )}
-
                   <div>
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-950/70 border border-cyan-800/40 flex items-center justify-center text-cyan-400 mb-2 group-hover:scale-105 transition">
-                      <Droplets className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {/* 1. MyPOS Style Aspect-Ratio Product Visual Showcase */}
+                    <div className="relative mb-2.5 w-full aspect-[16/10] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center group-hover:border-slate-700 transition">
+                      <ProductVisual
+                        unit={product.unit}
+                        isRefill20l={product.isRefill20l}
+                        productCode={product.productCode}
+                        showRipples={false}
+                      />
+
+                      {/* Top-Left Code Badge */}
+                      <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-slate-950/85 backdrop-blur-md text-cyan-400 border border-slate-800 shadow-sm">
+                        {product.productCode}
+                      </span>
+
+                      {/* Top-Right Unit Badge */}
+                      <span className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-md text-[9px] font-bold bg-cyan-950/85 backdrop-blur-md text-cyan-300 border border-cyan-800/50 shadow-sm">
+                        {getUnitLabel(product.unit)}
+                      </span>
+
+                      {/* Floating In-Cart Badge */}
+                      {isInCart && (
+                        <div className="absolute bottom-2 left-2 z-10 animate-in zoom-in-75 duration-150">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-cyan-500 px-2 py-0.5 text-[9px] font-black text-slate-950 shadow-md">
+                            <Check className="w-2.5 h-2.5" /> {cartQuantity}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Bottom-Right Refill indicator if 20L */}
+                      {is20L && !isInCart && (
+                        <span className="absolute bottom-2 left-2 z-10 px-1.5 py-0.5 rounded-md text-[8px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                          ប្តូរសំបក ២០L
+                        </span>
+                      )}
                     </div>
-                    <h4 className="text-xs font-bold text-white leading-snug line-clamp-2">
+
+                    {/* 2. Product Name & Subtitle */}
+                    <h4
+                      title={product.nameKh}
+                      className="text-xs sm:text-[13px] font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1 leading-snug"
+                    >
                       {product.nameKh}
                     </h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">{product.nameEn}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5 truncate font-medium">
+                      {product.nameEn || 'SRP Pure Water'}
+                    </p>
                   </div>
 
-                  <div className="mt-2.5 pt-2 border-t border-slate-700/60 flex items-baseline justify-between gap-1">
-                    <span
-                      className={`text-xs font-black truncate ${
-                        priceMode === 'wholesale' ? 'text-emerald-400' : 'text-cyan-300'
+                  {/* 3. Footer: Active Price & MyPOS Action Button */}
+                  <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-baseline justify-between gap-1">
+                    <div>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`text-sm sm:text-base font-black font-mono leading-none ${
+                            priceMode === 'wholesale' ? 'text-emerald-400' : 'text-cyan-300'
+                          }`}
+                        >
+                          {formatCurrency(activePrice, 'KHR')}
+                        </span>
+                        <span className="text-[8px] font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-slate-800 text-slate-400">
+                          {priceMode === 'wholesale' ? 'ដុំ' : 'រាយ'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        ≈ {formatCurrency(khrToUsd(activePrice, settings.exchangeRateKhrPerUsd), 'USD')}
+                      </p>
+                    </div>
+
+                    {/* MyPOS Quick Tap Target Button */}
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-xl text-xs font-black transition shrink-0 shadow-sm ${
+                        isInCart
+                          ? 'bg-cyan-500 text-slate-950 shadow-cyan-500/20'
+                          : 'bg-cyan-950/60 text-cyan-400 border border-cyan-800/50 group-hover:bg-cyan-500 group-hover:text-slate-950'
                       }`}
                     >
-                      {formatCurrency(activePrice, 'KHR')}
-                    </span>
-                    <span className="text-[9px] sm:text-[10px] text-slate-400 truncate">
-                      {priceMode === 'wholesale' ? 'ដុំ' : 'រាយ'}
-                    </span>
+                      {isInCart ? `+${cartQuantity}` : '+'}
+                    </div>
                   </div>
-                </button>
+                </article>
               );
             })}
           </div>

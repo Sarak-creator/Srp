@@ -489,6 +489,7 @@ export default function AppHome() {
               customers={customers}
               settings={settings}
               activeUser={activeUser}
+              containerUnits={containerUnits}
               onCompleteOrder={handleCompleteOrder}
               onAddCustomer={handleSaveCustomer}
             />
