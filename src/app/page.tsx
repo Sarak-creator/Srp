@@ -32,8 +32,20 @@ import { SettingsView } from '@/components/modules/SettingsView';
 export default function AppHome() {
   const [activeModule, setActiveModule] = useState<ActiveModule>('dashboard');
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Auto collapse sidebar when navigating to POS, expand when returning to other modules
+  const handleSelectModule = (mod: ActiveModule) => {
+    setActiveModule(mod);
+    setIsMobileDrawerOpen(false);
+    if (mod === 'pos') {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
+  };
 
   // Core Data State
   const [products, setProducts] = useState<Product[]>([]);
@@ -375,10 +387,7 @@ export default function AppHome() {
       <HeaderBar
         settings={settings}
         activeUser={activeUser}
-        onOpenPos={() => {
-          setActiveModule('pos');
-          setIsMobileDrawerOpen(false);
-        }}
+        onOpenPos={() => handleSelectModule('pos')}
         onUpdateRate={handleUpdateExchangeRate}
         onToggleMobileMenu={() => setIsMobileDrawerOpen((prev) => !prev)}
       />
@@ -388,14 +397,13 @@ export default function AppHome() {
         {/* Navigation Sidebar (Desktop + Mobile Slide-over Drawer) */}
         <Sidebar
           activeModule={activeModule}
-          onSelectModule={(mod) => {
-            setActiveModule(mod);
-            setIsMobileDrawerOpen(false);
-          }}
+          onSelectModule={handleSelectModule}
           uncollectedDebtCount={uncollectedDebtCount}
           emptyBottleHoldersCount={emptyBottleHoldersCount}
           isMobileOpen={isMobileDrawerOpen}
           onCloseMobile={() => setIsMobileDrawerOpen(false)}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
         />
 
         {/* Dynamic Content Pane for the 11 Modules (responsive padding with pb-24 for mobile nav bar) */}
@@ -407,7 +415,7 @@ export default function AppHome() {
               expenses={expenses}
               brokenProducts={brokenProducts}
               settings={settings}
-              onNavigate={setActiveModule}
+              onNavigate={handleSelectModule}
             />
           )}
 
@@ -515,10 +523,7 @@ export default function AppHome() {
       {/* Modern Responsive Mobile Bottom Navigation Bar (< lg devices) */}
       <MobileBottomNav
         activeModule={activeModule}
-        onSelectModule={(mod) => {
-          setActiveModule(mod);
-          setIsMobileDrawerOpen(false);
-        }}
+        onSelectModule={handleSelectModule}
         onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
         isMobileDrawerOpen={isMobileDrawerOpen}
         uncollectedDebtCount={uncollectedDebtCount}

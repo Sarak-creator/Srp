@@ -15,6 +15,8 @@ import {
   Settings,
   X,
   Droplets,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export type ActiveModule =
@@ -37,6 +39,8 @@ interface SidebarProps {
   emptyBottleHoldersCount?: number;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -46,6 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   emptyBottleHoldersCount = 0,
   isMobileOpen = false,
   onCloseMobile,
+  isCollapsed = false,
+  onToggleCollapse,
 }) => {
   const menuItems = [
     {
@@ -128,84 +134,188 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const navContent = (isMobile = false) => (
-    <>
-      <div className="p-3 flex items-center justify-between">
-        <p className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-slate-500">
-          ម៉ឺនុយគ្រប់គ្រង (11 MODULES)
-        </p>
-        {isMobile && onCloseMobile && (
-          <button
-            onClick={onCloseMobile}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            aria-label="Close menu"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
+  const navContent = (isMobile = false) => {
+    const collapsed = !isMobile && isCollapsed;
 
-      <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeModule === item.id;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleItemClick(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs transition-all duration-150 ${
-                item.isSpecial
-                  ? isActive
-                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30 font-bold'
-                    : 'bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/50 hover:text-white border border-cyan-800/40'
-                  : isActive
-                  ? 'bg-slate-800 text-white font-bold border border-slate-700 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon
-                  className={`w-4 h-4 shrink-0 ${
-                    isActive
-                      ? item.isSpecial
-                        ? 'text-white'
-                        : 'text-cyan-400'
-                      : item.isSpecial
-                      ? 'text-cyan-400'
-                      : 'text-slate-500'
-                  }`}
-                />
-                <div className="min-w-0">
-                  <p className="font-medium leading-none truncate">{item.labelKh}</p>
-                  <p className="text-[10px] opacity-70 mt-0.5 leading-none truncate">{item.labelEn}</p>
-                </div>
-              </div>
-
-              {item.badge && (
-                <span
-                  className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md shrink-0 ${item.badgeColor}`}
-                >
-                  {item.badge}
-                </span>
+    return (
+      <>
+        {/* Header Section */}
+        <div
+          className={`p-3 flex items-center ${
+            collapsed ? 'justify-center' : 'justify-between'
+          } border-b border-slate-800/60`}
+        >
+          {!collapsed ? (
+            <>
+              <p className="px-2 py-1 text-[10px] uppercase font-bold tracking-wider text-slate-500 truncate">
+                ម៉ឺនុយគ្រប់គ្រង (11 MODULES)
+              </p>
+              {isMobile ? (
+                onCloseMobile && (
+                  <button
+                    onClick={onCloseMobile}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                    aria-label="Close menu"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )
+              ) : (
+                onToggleCollapse && (
+                  <button
+                    onClick={onToggleCollapse}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                    title="បង្រួមម៉ឺនុយ (Collapse Sidebar)"
+                    aria-label="Collapse sidebar"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )
               )}
-            </button>
-          );
-        })}
-      </nav>
+            </>
+          ) : (
+            onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition"
+                title="ពង្រីកម៉ឺនុយ (Expand Sidebar)"
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )
+          )}
+        </div>
 
-      {/* Footer Info */}
-      <div className="p-3 border-t border-slate-800 text-[10px] text-slate-500 text-center">
-        <p className="font-medium text-slate-400">SRP Water ERP v1.0</p>
-        <p>ប្រព័ន្ធសុវត្ថិភាព ផលិតទឹកបរិសុទ្ធ</p>
-      </div>
-    </>
-  );
+        {/* Navigation Items List */}
+        <nav className={`flex-1 ${collapsed ? 'px-2' : 'px-3'} py-2 space-y-1.5 overflow-y-auto`}>
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeModule === item.id;
+
+            if (collapsed) {
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item.id)}
+                  title={`${item.labelKh} (${item.labelEn})`}
+                  className={`w-11 h-11 mx-auto flex items-center justify-center rounded-xl relative group transition-all duration-150 ${
+                    item.isSpecial
+                      ? isActive
+                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30'
+                        : 'bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60 hover:text-white border border-cyan-800/40'
+                      : isActive
+                      ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Icon
+                    className={`w-5 h-5 shrink-0 ${
+                      isActive
+                        ? item.isSpecial
+                          ? 'text-white'
+                          : 'text-cyan-400'
+                        : item.isSpecial
+                        ? 'text-cyan-400'
+                        : 'text-slate-400 group-hover:text-slate-200'
+                    }`}
+                  />
+
+                  {/* Collapsed Badge Indicator */}
+                  {item.badge && (
+                    <span
+                      className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[9px] font-bold rounded-full ${
+                        item.id === 'debt'
+                          ? 'bg-rose-500 text-white'
+                          : 'bg-cyan-500 text-slate-950'
+                      } ring-2 ring-slate-900 shadow`}
+                    >
+                      {item.id === 'debt' ? uncollectedDebtCount : emptyBottleHoldersCount}
+                    </span>
+                  )}
+
+                  {/* Floating Tooltip */}
+                  <div className="hidden group-hover:flex absolute left-full ml-3 top-1/2 -translate-y-1/2 z-50 px-2.5 py-1.5 bg-slate-800 border border-slate-700 text-white rounded-lg shadow-xl text-xs whitespace-nowrap pointer-events-none items-center gap-1.5">
+                    <span className="font-medium">{item.labelKh}</span>
+                    <span className="text-[10px] text-cyan-400 font-normal">({item.labelEn})</span>
+                  </div>
+                </button>
+              );
+            }
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleItemClick(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs transition-all duration-150 ${
+                  item.isSpecial
+                    ? isActive
+                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30 font-bold'
+                      : 'bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/50 hover:text-white border border-cyan-800/40'
+                    : isActive
+                    ? 'bg-slate-800 text-white font-bold border border-slate-700 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Icon
+                    className={`w-4 h-4 shrink-0 ${
+                      isActive
+                        ? item.isSpecial
+                          ? 'text-white'
+                          : 'text-cyan-400'
+                        : item.isSpecial
+                        ? 'text-cyan-400'
+                        : 'text-slate-500'
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-medium leading-none truncate">{item.labelKh}</p>
+                    <p className="text-[10px] opacity-70 mt-0.5 leading-none truncate">{item.labelEn}</p>
+                  </div>
+                </div>
+
+                {item.badge && (
+                  <span
+                    className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md shrink-0 ${item.badgeColor}`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Footer Info */}
+        <div
+          className={`p-3 border-t border-slate-800 text-[10px] text-slate-500 ${
+            collapsed ? 'flex justify-center' : 'text-center'
+          }`}
+        >
+          {collapsed ? (
+            <span className="font-bold text-cyan-500/80" title="SRP Water ERP v1.0">
+              SRP
+            </span>
+          ) : (
+            <>
+              <p className="font-medium text-slate-400">SRP Water ERP v1.0</p>
+              <p>ប្រព័ន្ធសុវត្ថិភាព ផលិតទឹកបរិសុទ្ធ</p>
+            </>
+          )}
+        </div>
+      </>
+    );
+  };
 
   return (
     <>
       {/* Desktop Sidebar (hidden on mobile and tablet < lg) */}
-      <aside className="hidden lg:flex w-64 bg-slate-900 border-r border-slate-800 flex-col flex-shrink-0 select-none">
+      <aside
+        className={`hidden lg:flex flex-col flex-shrink-0 select-none bg-slate-900 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'w-[72px]' : 'w-64'
+        }`}
+      >
         {navContent(false)}
       </aside>
 
