@@ -33,6 +33,12 @@
   background: #0ea5e9;
 }
 
+/* Strictly prevent horizontal scrolling on sidebar */
+aside,
+aside nav {
+  overflow-x: hidden !important;
+}
+
 /* Thermal Receipt Print Styles */
 @media print {
   body * {

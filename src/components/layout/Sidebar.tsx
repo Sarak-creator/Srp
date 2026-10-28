@@ -149,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div
           className={`p-3 flex items-center ${
             collapsed ? 'justify-center' : 'justify-between'
-          } border-b border-slate-800/60 flex-shrink-0`}
+          } border-b border-slate-800/60 flex-shrink-0 overflow-hidden`}
         >
           {!collapsed ? (
             <>
@@ -158,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   ម៉ឺនុយគ្រប់គ្រង (11)
                 </p>
                 {isFixed && !isMobile && (
-                  <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">
+                  <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-950/80 text-cyan-400 border border-cyan-800/50 shrink-0">
                     <Pin className="w-2.5 h-2.5" />
                     <span>ថេរ</span>
                   </span>
@@ -169,14 +169,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onCloseMobile && (
                   <button
                     onClick={onCloseMobile}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition shrink-0"
                     aria-label="Close menu"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 )
               ) : (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   {onToggleFixed && (
                     <button
                       onClick={onToggleFixed}
@@ -218,8 +218,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Navigation Items List */}
-        <nav className={`flex-1 ${collapsed ? 'px-2' : 'px-3'} py-2 space-y-1.5 overflow-y-auto`}>
+        {/* Navigation Items List (Strictly overflow-x-hidden to prevent horizontal scrolling) */}
+        <nav className={`flex-1 ${collapsed ? 'px-2' : 'px-3'} py-2 space-y-1.5 overflow-y-auto overflow-x-hidden`}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeModule === item.id;
@@ -278,7 +278,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs transition-all duration-150 ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs transition-all duration-150 overflow-hidden ${
                   item.isSpecial
                     ? isActive
                       ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30 font-bold'
@@ -288,7 +288,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
                   <Icon
                     className={`w-4 h-4 shrink-0 ${
                       isActive
@@ -300,15 +300,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'text-slate-500'
                     }`}
                   />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <p className="font-medium leading-none truncate">{item.labelKh}</p>
-                    <p className="text-[10px] opacity-70 mt-0.5 leading-none truncate">{item.labelEn}</p>
+                    <p className="text-[10px] opacity-70 mt-1 leading-none truncate">{item.labelEn}</p>
                   </div>
                 </div>
 
                 {item.badge && (
                   <span
-                    className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md shrink-0 ${item.badgeColor}`}
+                    className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md shrink-0 ml-1 ${item.badgeColor}`}
                   >
                     {item.badge}
                   </span>
@@ -320,7 +320,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Footer Info */}
         <div
-          className={`p-3 border-t border-slate-800 text-[10px] text-slate-500 flex-shrink-0 ${
+          className={`p-3 border-t border-slate-800 text-[10px] text-slate-500 flex-shrink-0 overflow-hidden ${
             collapsed ? 'flex justify-center' : 'text-center'
           }`}
         >
@@ -330,8 +330,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           ) : (
             <>
-              <p className="font-medium text-slate-400">SRP Water ERP v1.0</p>
-              <p>ប្រព័ន្ធសុវត្ថិភាព ផលិតទឹកបរិសុទ្ធ</p>
+              <p className="font-medium text-slate-400 truncate">SRP Water ERP v1.0</p>
+              <p className="truncate">ប្រព័ន្ធសុវត្ថិភាព ផលិតទឹកបរិសុទ្ធ</p>
             </>
           )}
         </div>
@@ -343,7 +343,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Desktop Fixed Sidebar (hidden on mobile and tablet < lg) */}
       <aside
-        className={`hidden lg:flex flex-col flex-shrink-0 select-none bg-slate-900 border-r border-slate-800 transition-all duration-300 ease-in-out h-full overflow-hidden ${
+        className={`hidden lg:flex flex-col flex-shrink-0 select-none bg-slate-900 border-r border-slate-800 transition-all duration-300 ease-in-out h-full overflow-hidden overflow-x-hidden ${
           isCollapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
@@ -360,7 +360,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
 
           {/* Drawer Content */}
-          <aside className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col h-full z-10 shadow-2xl">
+          <aside className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col h-full z-10 shadow-2xl overflow-hidden overflow-x-hidden">
             {/* Mobile Header with Logo */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
               <SrpLogo size={34} showText={true} subtitle="គ្រប់គ្រងម៉ឺនុយទាំងអស់" />
