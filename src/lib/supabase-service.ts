@@ -76,7 +76,16 @@ export const SupabaseService = {
 
   async saveProduct(prod: Product): Promise<Product | null> {
     try {
-      const isExisting = isUuid(prod.id);
+      let isExisting = false;
+      if (isUuid(prod.id)) {
+        const { data: existing } = await supabase
+          .from('products')
+          .select('id')
+          .eq('id', prod.id)
+          .maybeSingle();
+        if (existing?.id) isExisting = true;
+      }
+
       const retailKhr = prod.retailPriceKhr ?? prod.salePriceKhr ?? 0;
       const wholesaleKhr = prod.wholesalePriceKhr ?? 0;
       const saleUsd = prod.salePriceUsd ?? Number((retailKhr / 4100).toFixed(2));
@@ -223,7 +232,16 @@ export const SupabaseService = {
 
   async saveCustomer(cust: Customer): Promise<Customer | null> {
     try {
-      const isExisting = isUuid(cust.id);
+      let isExisting = false;
+      if (isUuid(cust.id)) {
+        const { data: existing } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('id', cust.id)
+          .maybeSingle();
+        if (existing?.id) isExisting = true;
+      }
+
       const payload: Record<string, any> = {
         customer_code: cust.customerCode,
         full_name: cust.fullName,
@@ -885,7 +903,16 @@ export const SupabaseService = {
 
   async saveSupplier(sup: Supplier): Promise<Supplier | null> {
     try {
-      const isExisting = isUuid(sup.id);
+      let isExisting = false;
+      if (isUuid(sup.id)) {
+        const { data: existing } = await supabase
+          .from('suppliers')
+          .select('id')
+          .eq('id', sup.id)
+          .maybeSingle();
+        if (existing?.id) isExisting = true;
+      }
+
       const payload: Record<string, any> = {
         supplier_name: sup.supplierName,
         contact_person: sup.contactPerson || '',
@@ -1088,7 +1115,6 @@ export const SupabaseService = {
 
   async saveContainerUnit(item: ContainerUnitItem): Promise<ContainerUnitItem | null> {
     try {
-      const isExisting = isUuid(item.id);
       const payload: Record<string, any> = {
         code: item.code.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'),
         name_kh: item.nameKh.trim(),
@@ -1097,11 +1123,30 @@ export const SupabaseService = {
         is_default: Boolean(item.isDefault),
       };
 
-      if (isExisting) {
+      let existingId: string | null = null;
+      if (item.id && isUuid(item.id)) {
+        const { data: byId } = await supabase
+          .from('container_units')
+          .select('id')
+          .eq('id', item.id)
+          .maybeSingle();
+        if (byId?.id) existingId = byId.id;
+      }
+
+      if (!existingId) {
+        const { data: byCode } = await supabase
+          .from('container_units')
+          .select('id')
+          .eq('code', payload.code)
+          .maybeSingle();
+        if (byCode?.id) existingId = byCode.id;
+      }
+
+      if (existingId) {
         const { data, error } = await supabase
           .from('container_units')
           .update(payload)
-          .eq('id', item.id)
+          .eq('id', existingId)
           .select()
           .single();
 
@@ -1120,7 +1165,7 @@ export const SupabaseService = {
           createdAt: data.created_at,
         };
       } else {
-        const newId = generateUuid();
+        const newId = isUuid(item.id) ? item.id : generateUuid();
         payload.id = newId;
 
         const { data, error } = await supabase

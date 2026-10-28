@@ -11,6 +11,12 @@ CREATE TABLE IF NOT EXISTS container_units (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Disable RLS to match other tables in the ERP schema
+ALTER TABLE container_units DISABLE ROW LEVEL SECURITY;
+
+-- Grant full permissions for Supabase client
+GRANT ALL ON TABLE container_units TO anon, authenticated, service_role;
+
 -- Convert products.unit to VARCHAR(100) to allow dynamic user-defined units
 ALTER TABLE products ALTER COLUMN unit TYPE VARCHAR(100) USING unit::text;
 

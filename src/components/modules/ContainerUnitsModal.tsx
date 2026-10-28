@@ -125,7 +125,7 @@ export const ContainerUnitsModal: React.FC<ContainerUnitsModalProps> = ({
     const res = await onSaveUnit(unitItem);
     setIsSubmitting(false);
 
-    if (res !== false) {
+    if (res) {
       if (onSelectUnit) {
         onSelectUnit(formattedCode);
       }
@@ -439,3 +439,4 @@ export const ContainerUnitsModal: React.FC<ContainerUnitsModalProps> = ({
     </div>
   );
 };
+

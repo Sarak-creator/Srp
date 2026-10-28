@@ -268,9 +268,12 @@ export default function AppHome() {
 
     const saved = await SupabaseService.saveContainerUnit(unitItem);
     if (saved) {
-      const refreshed = updated.map((u) =>
+      let refreshed = updated.map((u) =>
         u.id === unitItem.id || u.code === unitItem.code ? saved : u
       );
+      if (saved.isDefault) {
+        refreshed = refreshed.map((u) => (u.id === saved.id ? u : { ...u, isDefault: false }));
+      }
       setContainerUnits(refreshed);
       StorageService.saveContainerUnits(refreshed);
       return saved;
