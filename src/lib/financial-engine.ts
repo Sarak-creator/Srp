@@ -32,10 +32,21 @@ export function formatUsd(amount: number): string {
 }
 
 /**
- * ទម្រង់បង្ហាញរូបិយប័ណ្ណរៀល (៛)
+ * ទម្រង់បង្ហាញរូបិយប័ណ្ណរៀល (៛) ឧ. 3,000 ៛
  */
 export function formatKhr(amount: number): string {
-  return `${Math.round(amount).toLocaleString('en-US')} ៛`;
+  return `${Math.round(amount || 0).toLocaleString('en-US')} ៛`;
+}
+
+/**
+ * ទម្រង់បង្ហាញរូបិយប័ណ្ណទូទៅ (Currency Formatter)
+ * គាំទ្ររៀល (KHR) ជាចម្បង និងដុល្លារ (USD)
+ */
+export function formatCurrency(amount: number, currency: 'KHR' | 'USD' = 'KHR'): string {
+  if (currency === 'KHR') {
+    return formatKhr(amount);
+  }
+  return formatUsd(amount);
 }
 
 /**

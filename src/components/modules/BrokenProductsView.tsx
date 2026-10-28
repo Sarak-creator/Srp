@@ -29,8 +29,9 @@ export const BrokenProductsView: React.FC<BrokenProductsViewProps> = ({
 
   const selectedProduct = products.find((p) => p.id === selectedProductId) || products[0];
   const numQty = parseInt(quantity, 10) || 0;
+  const estimatedCost = selectedProduct?.unitCostUsd || selectedProduct?.wholesalePriceUsd || 0;
   const estimatedLossUsd = selectedProduct
-    ? calculateBrokenLoss(numQty, selectedProduct.unitCostUsd)
+    ? calculateBrokenLoss(numQty, estimatedCost)
     : 0;
 
   const totalLossAllUsd = brokenProducts.reduce((sum, b) => sum + b.totalLossUsd, 0);
@@ -45,7 +46,7 @@ export const BrokenProductsView: React.FC<BrokenProductsViewProps> = ({
       productId: selectedProduct.id,
       productNameKh: selectedProduct.nameKh,
       quantity: numQty,
-      unitCostUsd: selectedProduct.unitCostUsd,
+      unitCostUsd: estimatedCost,
       totalLossUsd: estimatedLossUsd,
       reason,
       reportedBy: activeUser.fullName,
@@ -183,7 +184,7 @@ export const BrokenProductsView: React.FC<BrokenProductsViewProps> = ({
               >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.nameKh} (ថ្លៃដើម: ${p.unitCostUsd.toFixed(2)})
+                    {p.nameKh} ({p.retailPriceKhr ? p.retailPriceKhr.toLocaleString() + ' ៛' : ''})
                   </option>
                 ))}
               </select>

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Package, Plus, Edit2, Trash2, Droplets } from 'lucide-react';
+import { Package, Plus, Edit2, Trash2, Droplets, Tag, Layers } from 'lucide-react';
 import { Product, ContainerUnit, SystemSettings } from '@/types/water-factory';
-import { usdToKhr } from '@/lib/financial-engine';
+import { formatCurrency, formatKhr, khrToUsd } from '@/lib/financial-engine';
 import { generateUuid } from '@/lib/supabase-service';
 
 interface ProductsViewProps {
@@ -22,13 +22,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  // Form State
+  // Form State - Prices in Khmer Riel (៛)
   const [nameKh, setNameKh] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [productCode, setProductCode] = useState('');
   const [unit, setUnit] = useState<ContainerUnit>('container_20l');
-  const [unitCostUsd, setUnitCostUsd] = useState('0.25');
-  const [salePriceUsd, setSalePriceUsd] = useState('0.75');
+  const [retailPriceKhr, setRetailPriceKhr] = useState('3000');
+  const [wholesalePriceKhr, setWholesalePriceKhr] = useState('2500');
   const [isRefill20l, setIsRefill20l] = useState(true);
 
   const openCreateModal = () => {
@@ -37,8 +37,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     setNameEn('');
     setProductCode(`W-${Date.now().toString().slice(-4)}`);
     setUnit('container_20l');
-    setUnitCostUsd('0.25');
-    setSalePriceUsd('0.75');
+    setRetailPriceKhr('3000');
+    setWholesalePriceKhr('2500');
     setIsRefill20l(true);
     setIsModalOpen(true);
   };
@@ -49,8 +49,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     setNameEn(p.nameEn);
     setProductCode(p.productCode);
     setUnit(p.unit);
-    setUnitCostUsd(p.unitCostUsd.toString());
-    setSalePriceUsd(p.salePriceUsd.toString());
+    setRetailPriceKhr((p.retailPriceKhr || p.salePriceKhr || 0).toString());
+    setWholesalePriceKhr((p.wholesalePriceKhr || 0).toString());
     setIsRefill20l(p.isRefill20l);
     setIsModalOpen(true);
   };
@@ -63,9 +63,10 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cost = parseFloat(unitCostUsd) || 0;
-    const price = parseFloat(salePriceUsd) || 0;
-    const priceKhr = usdToKhr(price, settings.exchangeRateKhrPerUsd);
+    const retailKhr = Math.round(parseFloat(retailPriceKhr) || 0);
+    const wholesaleKhr = Math.round(parseFloat(wholesalePriceKhr) || 0);
+    const retailUsd = khrToUsd(retailKhr, settings.exchangeRateKhrPerUsd);
+    const wholesaleUsd = khrToUsd(wholesaleKhr, settings.exchangeRateKhrPerUsd);
 
     const productData: Product = {
       id: editingProduct ? editingProduct.id : generateUuid(),
@@ -73,15 +74,34 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       nameKh: nameKh.trim(),
       nameEn: nameEn.trim() || nameKh.trim(),
       unit,
-      unitCostUsd: cost,
-      salePriceUsd: price,
-      salePriceKhr: priceKhr,
+      retailPriceKhr: retailKhr,
+      wholesalePriceKhr: wholesaleKhr,
+      retailPriceUsd: retailUsd,
+      wholesalePriceUsd: wholesaleUsd,
+      salePriceKhr: retailKhr,
+      salePriceUsd: retailUsd,
+      unitCostUsd: 0,
       isRefill20l,
       isActive: true,
     };
 
     onSaveProduct(productData);
     setIsModalOpen(false);
+  };
+
+  const getUnitLabel = (u: ContainerUnit) => {
+    switch (u) {
+      case 'container_20l':
+        return 'ធុង ២០លីត្រ';
+      case 'pack_350ml':
+        return 'យួរ ៣៥០មល (២៤ដប)';
+      case 'pack_500ml':
+        return 'យួរ ៥០០មល (២៤ដប)';
+      case 'pack_1500ml':
+        return 'យួរ ១៥០០មល (១២ដប)';
+      default:
+        return 'ដប/កញ្ចប់';
+    }
   };
 
   return (
@@ -94,7 +114,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             បញ្ជីផលិតផលទឹកសម្រេច (Finished Bottled Water Registry)
           </h2>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            គ្រប់គ្រងតែទឹកធុង ២០L និងទឹកដបសម្រេច (គ្មានវត្ថុធាតុដើម)
+            គ្រប់គ្រងតម្លៃរាយ និងតម្លៃដុំ គិតជារៀល (៛) សម្រាប់ទឹកធុង ២០L និងទឹកដបសម្រេច
           </p>
         </div>
         <button
@@ -109,20 +129,22 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.map((product) => {
-          const marginUsd = product.salePriceUsd - product.unitCostUsd;
-          const marginPercent =
-            product.salePriceUsd > 0
-              ? Math.round((marginUsd / product.salePriceUsd) * 100)
+          const retailKhrVal = product.retailPriceKhr || product.salePriceKhr || 0;
+          const wholesaleKhrVal = product.wholesalePriceKhr || 0;
+          const diffKhr = retailKhrVal - wholesaleKhrVal;
+          const discountPercent =
+            retailKhrVal > 0 && diffKhr > 0
+              ? Math.round((diffKhr / retailKhrVal) * 100)
               : 0;
 
           return (
             <div
               key={product.id}
-              className="p-5 rounded-3xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition relative flex flex-col justify-between"
+              className="p-5 rounded-3xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition relative flex flex-col justify-between group shadow-sm hover:shadow-lg hover:shadow-cyan-950/20"
             >
               <div>
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-800/40 flex items-center justify-center text-cyan-400">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-950/70 border border-cyan-800/40 flex items-center justify-center text-cyan-400 shadow-sm">
                     <Droplets className="w-5 h-5" />
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -144,36 +166,65 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 </div>
 
                 <div className="mt-3">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    {product.productCode}
-                  </span>
-                  <h3 className="text-sm font-bold text-white mt-0.5">{product.nameKh}</h3>
-                  <p className="text-[11px] text-slate-400">{product.nameEn}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                      {product.productCode}
+                    </span>
+                    <span className="text-[10px] text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40 font-medium">
+                      {getUnitLabel(product.unit)}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white mt-1.5 line-clamp-1">
+                    {product.nameKh}
+                  </h3>
+                  <p className="text-[11px] text-slate-400 truncate">{product.nameEn}</p>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800 space-y-2 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">ថ្លៃដើមផលិត (Unit Cost):</span>
-                  <span className="font-semibold text-slate-300">
-                    ${product.unitCostUsd.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400">តម្លៃលក់ចេញ (Sale Price):</span>
-                  <span className="font-bold text-cyan-300">
-                    ${product.salePriceUsd.toFixed(2)} ({product.salePriceKhr.toLocaleString()} ៛)
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-1 border-t border-slate-800/60 text-[11px]">
-                  <span className="text-slate-500">ចំណេញដុល (Gross Margin):</span>
-                  <span className="font-bold text-emerald-400">
-                    +${marginUsd.toFixed(2)} ({marginPercent}%)
-                  </span>
+              {/* Pricing Cards: Retail & Wholesale */}
+              <div className="mt-4 pt-3 border-t border-slate-800 space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Retail Price Card */}
+                  <div className="p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+                    <div className="flex items-center gap-1 text-[10px] text-cyan-400 font-semibold mb-1">
+                      <Tag className="w-3 h-3" />
+                      <span>តម្លៃរាយ</span>
+                    </div>
+                    <div className="text-sm font-black text-cyan-300">
+                      {formatCurrency(retailKhrVal, 'KHR')}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 font-medium">
+                      ≈ {formatCurrency(product.salePriceUsd || khrToUsd(retailKhrVal, settings.exchangeRateKhrPerUsd), 'USD')}
+                    </div>
+                  </div>
+
+                  {/* Wholesale Price Card */}
+                  <div className="p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+                    <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold mb-1">
+                      <Layers className="w-3 h-3" />
+                      <span>តម្លៃដុំ</span>
+                    </div>
+                    <div className="text-sm font-black text-emerald-400">
+                      {formatCurrency(wholesaleKhrVal, 'KHR')}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 font-medium">
+                      ≈ {formatCurrency(product.wholesalePriceUsd || khrToUsd(wholesaleKhrVal, settings.exchangeRateKhrPerUsd), 'USD')}
+                    </div>
+                  </div>
                 </div>
 
+                {/* Wholesale Discount indicator */}
+                {diffKhr > 0 && (
+                  <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-800/50 border border-slate-700/50 text-[10px]">
+                    <span className="text-slate-400">បញ្ចុះតម្លៃដុំ:</span>
+                    <span className="font-bold text-emerald-400">
+                      -{formatCurrency(diffKhr, 'KHR')} ({discountPercent}%)
+                    </span>
+                  </div>
+                )}
+
                 {product.isRefill20l && (
-                  <div className="mt-2 text-[10px] text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2 py-1 rounded-lg text-center font-semibold">
+                  <div className="text-[10px] text-cyan-400 bg-cyan-950/40 border border-cyan-800/40 px-2 py-1 rounded-lg text-center font-medium">
                     ✓ ភ្ជាប់ការតាមដានសំបកធុង ២០លីត្រ
                   </div>
                 )}
@@ -185,29 +236,39 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
       {/* Product Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl p-6 space-y-4 shadow-2xl"
+            className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-3xl p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
           >
-            <h3 className="text-sm font-bold text-white">
-              {editingProduct ? 'កែប្រែផលិតផលទឹក' : 'បន្ថែមផលិតផលទឹកសម្រេចថ្មី'}
-            </h3>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Package className="w-4 h-4 text-cyan-400" />
+                {editingProduct ? 'កែប្រែផលិតផលទឹក' : 'បន្ថែមផលិតផលទឹកសម្រេចថ្មី'}
+              </h3>
+              <span className="text-[10px] text-cyan-400 font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/50">
+                គិតជារៀល (៛)
+              </span>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">កូដផលិតផល *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  កូដផលិតផល *
+                </label>
                 <input
                   type="text"
                   required
                   value={productCode}
                   onChange={(e) => setProductCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">ប្រភេទកញ្ចប់/ធុង *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  ប្រភេទកញ្ចប់/ធុង *
+                </label>
                 <select
                   value={unit}
                   onChange={(e) => setUnit(e.target.value as ContainerUnit)}
@@ -222,7 +283,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">ឈ្មោះជាភាសាខ្មែរ *</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                ឈ្មោះជាភាសាខ្មែរ *
+              </label>
               <input
                 type="text"
                 required
@@ -234,7 +297,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">ឈ្មោះជាអង់គ្លេស</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">
+                ឈ្មោះជាអង់គ្លេស
+              </label>
               <input
                 type="text"
                 value={nameEn}
@@ -244,33 +309,72 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">ថ្លៃដើមផលិត Unit Cost ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={unitCostUsd}
-                  onChange={(e) => setUnitCostUsd(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
-                />
+            {/* Pricing Section - In Khmer Riel (៛) */}
+            <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-cyan-800/40 space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-white border-b border-slate-800 pb-1.5">
+                <span className="flex items-center gap-1.5 text-cyan-400">
+                  <Tag className="w-3.5 h-3.5" />
+                  កំណត់តម្លៃលក់ (គិតជារៀល ៛)
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">
+                  អត្រាប្តូរប្រាក់: 1$ = {settings.exchangeRateKhrPerUsd.toLocaleString()} ៛
+                </span>
               </div>
 
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">តម្លៃលក់ចេញ Sale Price ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={salePriceUsd}
-                  onChange={(e) => setSalePriceUsd(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                {/* Retail Price Input */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    តម្លៃរាយ (៛) *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="100"
+                      min="0"
+                      required
+                      value={retailPriceKhr}
+                      onChange={(e) => setRetailPriceKhr(e.target.value)}
+                      placeholder="3000"
+                      className="w-full pl-3 pr-7 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-500"
+                    />
+                    <span className="absolute right-2.5 top-2 text-xs font-bold text-slate-500">
+                      ៛
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-cyan-400 font-semibold mt-1">
+                    = {formatCurrency(parseFloat(retailPriceKhr) || 0, 'KHR')}
+                  </p>
+                </div>
+
+                {/* Wholesale Price Input */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    តម្លៃដុំ (៛) *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="100"
+                      min="0"
+                      required
+                      value={wholesalePriceKhr}
+                      onChange={(e) => setWholesalePriceKhr(e.target.value)}
+                      placeholder="2500"
+                      className="w-full pl-3 pr-7 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
+                    />
+                    <span className="absolute right-2.5 top-2 text-xs font-bold text-slate-500">
+                      ៛
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-emerald-400 font-semibold mt-1">
+                    = {formatCurrency(parseFloat(wholesalePriceKhr) || 0, 'KHR')}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-xs text-slate-300 pt-1 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-slate-300 pt-1 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={isRefill20l}
@@ -284,13 +388,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                className="px-4 py-2 text-xs text-slate-400 hover:text-white transition"
               >
                 បោះបង់
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 rounded-xl shadow-lg shadow-cyan-600/30"
+                className="px-5 py-2 text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 rounded-xl shadow-lg shadow-cyan-600/30 transition"
               >
                 រក្សាទុកផលិតផល
               </button>

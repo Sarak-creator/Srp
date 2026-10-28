@@ -45,18 +45,28 @@ export const SupabaseService = {
         return [];
       }
 
-      return (data || []).map((row) => ({
-        id: row.id,
-        productCode: row.product_code,
-        nameKh: row.name_kh,
-        nameEn: row.name_en || '',
-        unit: row.unit,
-        unitCostUsd: Number(row.unit_cost_usd || 0),
-        salePriceUsd: Number(row.sale_price_usd || 0),
-        salePriceKhr: Number(row.sale_price_khr || 0),
-        isRefill20l: Boolean(row.is_refill_20l),
-        isActive: Boolean(row.is_active),
-      }));
+      return (data || []).map((row) => {
+        const retailKhr = Number(row.retail_price_khr || row.sale_price_khr || 0);
+        const wholesaleKhr = Number(row.wholesale_price_khr || 0);
+        const saleUsd = Number(row.sale_price_usd || (retailKhr / 4100));
+
+        return {
+          id: row.id,
+          productCode: row.product_code,
+          nameKh: row.name_kh,
+          nameEn: row.name_en || '',
+          unit: row.unit,
+          retailPriceKhr: retailKhr,
+          wholesalePriceKhr: wholesaleKhr,
+          retailPriceUsd: saleUsd,
+          wholesalePriceUsd: Number((wholesaleKhr / 4100).toFixed(2)),
+          salePriceKhr: retailKhr,
+          salePriceUsd: saleUsd,
+          unitCostUsd: Number(row.unit_cost_usd || 0),
+          isRefill20l: Boolean(row.is_refill_20l),
+          isActive: Boolean(row.is_active),
+        };
+      });
     } catch (e) {
       console.error('Unexpected error fetching products:', e);
       return [];
@@ -66,14 +76,20 @@ export const SupabaseService = {
   async saveProduct(prod: Product): Promise<Product | null> {
     try {
       const isExisting = isUuid(prod.id);
+      const retailKhr = prod.retailPriceKhr ?? prod.salePriceKhr ?? 0;
+      const wholesaleKhr = prod.wholesalePriceKhr ?? 0;
+      const saleUsd = prod.salePriceUsd ?? Number((retailKhr / 4100).toFixed(2));
+
       const payload: Record<string, any> = {
         product_code: prod.productCode,
         name_kh: prod.nameKh,
         name_en: prod.nameEn || '',
         unit: prod.unit,
-        unit_cost_usd: prod.unitCostUsd,
-        sale_price_usd: prod.salePriceUsd,
-        sale_price_khr: prod.salePriceKhr,
+        retail_price_khr: retailKhr,
+        wholesale_price_khr: wholesaleKhr,
+        sale_price_khr: retailKhr,
+        sale_price_usd: saleUsd,
+        unit_cost_usd: prod.unitCostUsd || 0,
         is_refill_20l: prod.isRefill20l,
         is_active: prod.isActive ?? true,
       };
@@ -90,15 +106,23 @@ export const SupabaseService = {
           console.error('Error updating product in Supabase:', error.message);
           return null;
         }
+        const updatedRetailKhr = Number(data.retail_price_khr || data.sale_price_khr || 0);
+        const updatedWholesaleKhr = Number(data.wholesale_price_khr || 0);
+        const updatedSaleUsd = Number(data.sale_price_usd || 0);
+
         return {
           id: data.id,
           productCode: data.product_code,
           nameKh: data.name_kh,
           nameEn: data.name_en,
           unit: data.unit,
-          unitCostUsd: Number(data.unit_cost_usd),
-          salePriceUsd: Number(data.sale_price_usd),
-          salePriceKhr: Number(data.sale_price_khr),
+          retailPriceKhr: updatedRetailKhr,
+          wholesalePriceKhr: updatedWholesaleKhr,
+          retailPriceUsd: updatedSaleUsd,
+          wholesalePriceUsd: Number((updatedWholesaleKhr / 4100).toFixed(2)),
+          salePriceKhr: updatedRetailKhr,
+          salePriceUsd: updatedSaleUsd,
+          unitCostUsd: Number(data.unit_cost_usd || 0),
           isRefill20l: data.is_refill_20l,
           isActive: data.is_active,
         };
@@ -116,15 +140,23 @@ export const SupabaseService = {
           console.error('Error inserting product in Supabase:', error.message);
           return null;
         }
+        const createdRetailKhr = Number(data.retail_price_khr || data.sale_price_khr || 0);
+        const createdWholesaleKhr = Number(data.wholesale_price_khr || 0);
+        const createdSaleUsd = Number(data.sale_price_usd || 0);
+
         return {
           id: data.id,
           productCode: data.product_code,
           nameKh: data.name_kh,
           nameEn: data.name_en,
           unit: data.unit,
-          unitCostUsd: Number(data.unit_cost_usd),
-          salePriceUsd: Number(data.sale_price_usd),
-          salePriceKhr: Number(data.sale_price_khr),
+          retailPriceKhr: createdRetailKhr,
+          wholesalePriceKhr: createdWholesaleKhr,
+          retailPriceUsd: createdSaleUsd,
+          wholesalePriceUsd: Number((createdWholesaleKhr / 4100).toFixed(2)),
+          salePriceKhr: createdRetailKhr,
+          salePriceUsd: createdSaleUsd,
+          unitCostUsd: Number(data.unit_cost_usd || 0),
           isRefill20l: data.is_refill_20l,
           isActive: data.is_active,
         };

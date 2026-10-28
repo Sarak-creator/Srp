@@ -31,8 +31,10 @@ import {
 import { generateUuid } from '@/lib/supabase-service';
 import {
   usdToKhr,
+  khrToUsd,
   formatUsd,
   formatKhr,
+  formatCurrency,
   roundKhr,
 } from '@/lib/financial-engine';
 import { ThermalReceiptModal } from '../pos/ThermalReceiptModal';
@@ -70,6 +72,7 @@ export const PosView: React.FC<PosViewProps> = ({
   const [discountUsd, setDiscountUsd] = useState<string>('0');
   const [orderNotes, setOrderNotes] = useState('');
   const [posMobileTab, setPosMobileTab] = useState<'catalog' | 'cart'>('catalog');
+  const [priceMode, setPriceMode] = useState<'retail' | 'wholesale'>('retail');
 
   // 20L Empty Bottle Exchange State
   const [containersDelivered20L, setContainersDelivered20L] = useState<number>(0);
@@ -104,8 +107,14 @@ export const PosView: React.FC<PosViewProps> = ({
         p.productCode.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Add Product to Cart
+  // Add Product to Cart with selected price mode (Retail vs Wholesale)
   const handleAddToCart = (product: Product) => {
+    const itemPriceKhr =
+      priceMode === 'wholesale' && (product.wholesalePriceKhr || 0) > 0
+        ? product.wholesalePriceKhr
+        : product.retailPriceKhr || product.salePriceKhr;
+    const itemPriceUsd = khrToUsd(itemPriceKhr, settings.exchangeRateKhrPerUsd);
+
     const existingIndex = cart.findIndex((item) => item.productId === product.id);
     if (existingIndex > -1) {
       const updated = [...cart];
@@ -125,11 +134,11 @@ export const PosView: React.FC<PosViewProps> = ({
         productNameKh: product.nameKh,
         unit: product.unit,
         quantity: 1,
-        unitCostUsd: product.unitCostUsd,
-        unitPriceUsd: product.salePriceUsd,
-        unitPriceKhr: product.salePriceKhr,
-        totalUsd: product.salePriceUsd,
-        totalKhr: product.salePriceKhr,
+        unitCostUsd: product.unitCostUsd || 0,
+        unitPriceUsd: itemPriceUsd,
+        unitPriceKhr: itemPriceKhr,
+        totalUsd: itemPriceUsd,
+        totalKhr: itemPriceKhr,
         product,
       };
       setCart([...cart, newItem]);
@@ -328,9 +337,9 @@ export const PosView: React.FC<PosViewProps> = ({
           className={`lg:col-span-7 flex flex-col h-[calc(100vh-14rem)] lg:h-full bg-slate-900/80 rounded-3xl border border-slate-800 p-3 sm:p-4 overflow-hidden ${posMobileTab === 'catalog' ? 'flex' : 'hidden lg:flex'
             }`}
         >
-          {/* Search & Filter Header */}
-          <div className="flex items-center gap-3 mb-3 sm:mb-4">
-            <div className="relative flex-1">
+          {/* Search & Filter Header with Retail / Wholesale Mode Toggle */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+            <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-500" />
               <input
                 type="text"
@@ -340,7 +349,36 @@ export const PosView: React.FC<PosViewProps> = ({
                 className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
               />
             </div>
-            <span className="text-[11px] font-semibold text-slate-400 px-2.5 py-1 bg-slate-800 rounded-xl shrink-0">
+
+            {/* Price Tier Toggle: Retail vs Wholesale */}
+            <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-700 shrink-0">
+              <button
+                type="button"
+                onClick={() => setPriceMode('retail')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                  priceMode === 'retail'
+                    ? 'bg-cyan-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="លក់រាយ (Retail Price)"
+              >
+                <span>🛒 រាយ</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPriceMode('wholesale')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                  priceMode === 'wholesale'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="លក់ដុំ (Wholesale Price)"
+              >
+                <span>📦 ដុំ</span>
+              </button>
+            </div>
+
+            <span className="text-[11px] font-semibold text-slate-400 px-2.5 py-1.5 bg-slate-800 rounded-xl shrink-0">
               {filteredProducts.length} មុខ
             </span>
           </div>
@@ -349,6 +387,11 @@ export const PosView: React.FC<PosViewProps> = ({
           <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
             {filteredProducts.map((product) => {
               const is20L = product.isRefill20l;
+              const retailPrice = product.retailPriceKhr || product.salePriceKhr || 0;
+              const wholesalePrice = product.wholesalePriceKhr || 0;
+              const activePrice =
+                priceMode === 'wholesale' && wholesalePrice > 0 ? wholesalePrice : retailPrice;
+
               return (
                 <button
                   key={product.id}
@@ -373,11 +416,15 @@ export const PosView: React.FC<PosViewProps> = ({
                   </div>
 
                   <div className="mt-2.5 pt-2 border-t border-slate-700/60 flex items-baseline justify-between gap-1">
-                    <span className="text-xs font-extrabold text-cyan-300">
-                      ${product.salePriceUsd.toFixed(2)}
+                    <span
+                      className={`text-xs font-black truncate ${
+                        priceMode === 'wholesale' ? 'text-emerald-400' : 'text-cyan-300'
+                      }`}
+                    >
+                      {formatCurrency(activePrice, 'KHR')}
                     </span>
-                    <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400 truncate">
-                      {product.salePriceKhr.toLocaleString()} ៛
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 truncate">
+                      {priceMode === 'wholesale' ? 'ដុំ' : 'រាយ'}
                     </span>
                   </div>
                 </button>

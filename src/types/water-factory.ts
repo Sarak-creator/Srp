@@ -11,9 +11,13 @@ export interface Product {
   nameKh: string;
   nameEn: string;
   unit: ContainerUnit;
-  unitCostUsd: number;
-  salePriceUsd: number;
-  salePriceKhr: number;
+  retailPriceKhr: number; // តម្លៃរាយ (គិតជារៀល)
+  wholesalePriceKhr: number; // តម្លៃដុំ (គិតជារៀល)
+  retailPriceUsd?: number;
+  wholesalePriceUsd?: number;
+  salePriceKhr: number; // Alias to retailPriceKhr
+  salePriceUsd: number; // USD equivalent
+  unitCostUsd?: number; // Removed from UI, kept optional for DB compatibility
   isRefill20l: boolean;
   isActive: boolean;
 }
