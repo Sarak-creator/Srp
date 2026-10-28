@@ -3,53 +3,53 @@
     <!-- Background Gradient -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#020617"/>
-      <stop offset="60%" stop-color="#082f49"/>
-      <stop offset="100%" stop-color="#0284c7"/>
+      <stop offset="50%" stop-color="#082f49"/>
+      <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
 
-    <!-- Droplet Crystal Gradient -->
-    <linearGradient id="dropGrad" x1="15%" y1="0%" x2="85%" y2="100%">
-      <stop offset="0%" stop-color="#e0f2fe"/>
-      <stop offset="25%" stop-color="#38bdf8"/>
-      <stop offset="60%" stop-color="#0284c7"/>
-      <stop offset="100%" stop-color="#1e40af"/>
-    </linearGradient>
-
-    <!-- Ripple Ring Gradient -->
-    <linearGradient id="rippleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <!-- Outer Glow Rim -->
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.9"/>
-      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.2"/>
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0.2"/>
     </linearGradient>
 
-    <!-- Drop Shadow Glow -->
-    <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#06b6d4" flood-opacity="0.5"/>
+    <!-- Droplet Gradient -->
+    <linearGradient id="dropGrad" x1="256" y1="70" x2="256" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="45%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+
+    <!-- Flowing S-Ribbon Gradient -->
+    <linearGradient id="sRibbonGrad" x1="160" y1="180" x2="350" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="40%" stop-color="#bae6fd" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.15"/>
+    </linearGradient>
+
+    <!-- Soft Drop Shadow Glow -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="20" stdDeviation="24" flood-color="#06b6d4" flood-opacity="0.4"/>
     </filter>
   </defs>
 
-  <!-- Squircle App Container Background -->
+  <!-- Squircle App Container -->
   <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
-  <rect x="6" y="6" width="500" height="500" rx="122" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="6"/>
+  <rect x="8" y="8" width="496" height="496" rx="120" fill="none" stroke="url(#rimGrad)" stroke-width="4"/>
 
-  <!-- Water Ripple Rings at Base -->
-  <ellipse cx="256" cy="380" rx="160" ry="42" fill="none" stroke="url(#rippleGrad)" stroke-width="6" stroke-dasharray="16 8" opacity="0.6"/>
-  <ellipse cx="256" cy="390" rx="110" ry="28" fill="none" stroke="#38bdf8" stroke-width="4" opacity="0.4"/>
-
-  <!-- Glowing Pure Water Droplet -->
-  <g filter="url(#glowEffect)">
-    <path d="M256 70 C256 70 120 236 120 326 C120 401.1 180.9 462 256 462 C331.1 462 392 401.1 392 326 C392 236 256 70 256 70 Z" fill="url(#dropGrad)"/>
+  <!-- Pure Water Droplet with Glow -->
+  <g filter="url(#glow)">
+    <path d="M256 72 C256 72 136 236 136 332 C136 398.27 189.73 452 256 452 C322.27 452 376 398.27 376 332 C376 236 256 72 256 72 Z" fill="url(#dropGrad)"/>
   </g>
 
-  <!-- Inner Meniscus Light Specular Arc -->
-  <path d="M256 110 C256 110 160 240 160 316 C160 340 172 370 196 394 C176 366 172 324 196 270 C220 216 256 110 256 110 Z" fill="#ffffff" opacity="0.55"/>
+  <!-- Flowing 'S' Wave inside Droplet -->
+  <path d="M256 120 C256 120 188 238 188 308 C188 350 220 384 256 384 C292 384 316 350 306 308 C294 262 230 250 240 196 C246 160 256 120 256 120 Z" fill="url(#sRibbonGrad)"/>
 
-  <!-- Specular Highlights -->
-  <circle cx="316" cy="260" r="14" fill="#ffffff" opacity="0.8"/>
-  <circle cx="334" cy="286" r="6" fill="#ffffff" opacity="0.7"/>
+  <!-- Crisp Light Highlight Arc -->
+  <path d="M256 112 C256 112 180 230 180 320 C180 342 188 362 202 378 C188 356 186 318 208 266 C228 214 256 112 256 112 Z" fill="#ffffff" opacity="0.7"/>
 
-  <!-- Brand Typography -->
-  <text x="256" y="336" text-anchor="middle" fill="#ffffff" font-weight="900" font-size="82" font-family="system-ui, -apple-system, sans-serif" letter-spacing="4" style="filter: drop-shadow(0 4px 8px rgba(2,6,23,0.85));">SRP</text>
-  <text x="256" y="380" text-anchor="middle" fill="#bae6fd" font-weight="800" font-size="24" font-family="system-ui, -apple-system, sans-serif" letter-spacing="6">PURE WATER</text>
-  <text x="256" y="416" text-anchor="middle" fill="#7dd3fc" font-weight="600" font-size="16" font-family="system-ui, -apple-system, sans-serif" letter-spacing="3">ទឹកបរិសុទ្ធ អេស.អ័រ.ភី</text>
+  <!-- Sparkle Reflection Specular Dots -->
+  <circle cx="308" cy="256" r="14" fill="#ffffff" opacity="0.9"/>
+  <circle cx="328" cy="286" r="6" fill="#ffffff" opacity="0.75"/>
 </svg>
