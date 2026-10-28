@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { StorageService } from '@/lib/storage';
-import { SupabaseSync } from '@/lib/supabase-sync';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StorageService, DEFAULT_CLEAN_SETTINGS, DEFAULT_CLEAN_USER } from '@/lib/storage';
+import { SupabaseService } from '@/lib/supabase-service';
 import {
   Product,
   Customer,
@@ -33,6 +33,7 @@ export default function AppHome() {
   const [activeModule, setActiveModule] = useState<ActiveModule>('dashboard');
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Core Data State
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,28 +43,81 @@ export default function AppHome() {
   const [expenses, setExpenses] = useState<OperationalExpense[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [payments, setPayments] = useState<CustomerPayment[]>([]);
-  const [settings, setSettings] = useState<SystemSettings>(StorageService.getSettings());
-  const [users, setUsers] = useState<UserAccount[]>([]);
-  const [activeUser, setActiveUser] = useState<UserAccount>(StorageService.getUsers()[0]);
+  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_CLEAN_SETTINGS);
+  const [users, setUsers] = useState<UserAccount[]>([DEFAULT_CLEAN_USER]);
+  const [activeUser, setActiveUser] = useState<UserAccount>(DEFAULT_CLEAN_USER);
 
-  // Load from Storage on Mount
-  useEffect(() => {
-    setProducts(StorageService.getProducts());
-    setCustomers(StorageService.getCustomers());
-    setOrders(StorageService.getOrders());
-    setBrokenProducts(StorageService.getBrokenProducts());
-    setExpenses(StorageService.getExpenses());
-    setSuppliers(StorageService.getSuppliers());
-    setPayments(StorageService.getPayments());
-    setSettings(StorageService.getSettings());
-    const loadedUsers = StorageService.getUsers();
-    setUsers(loadedUsers);
-    if (loadedUsers.length > 0) setActiveUser(loadedUsers[0]);
-    setIsLoaded(true);
+  // Load live data from Supabase Cloud Database on Mount
+  const loadDataFromSupabase = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      // 1. Purge legacy demo data from local storage if present
+      const cachedProducts = StorageService.getProducts();
+      const hasLegacyDemo = cachedProducts.some((p) => p.id === 'prod-1' || p.id === 'prod-2');
+      if (hasLegacyDemo) {
+        StorageService.clearLocalDemoData();
+      }
+
+      // 2. Fetch fresh live records directly from Supabase
+      const [
+        dbProducts,
+        dbCustomers,
+        dbOrders,
+        dbBroken,
+        dbExpenses,
+        dbSuppliers,
+        dbPayments,
+        dbSettings,
+        dbUsers,
+      ] = await Promise.all([
+        SupabaseService.fetchProducts(),
+        SupabaseService.fetchCustomers(),
+        SupabaseService.fetchOrders(),
+        SupabaseService.fetchBrokenProducts(),
+        SupabaseService.fetchExpenses(),
+        SupabaseService.fetchSuppliers(),
+        SupabaseService.fetchPayments(),
+        SupabaseService.fetchSettings(),
+        SupabaseService.fetchUsers(),
+      ]);
+
+      setProducts(dbProducts);
+      setCustomers(dbCustomers);
+      setOrders(dbOrders);
+      setBrokenProducts(dbBroken);
+      setExpenses(dbExpenses);
+      setSuppliers(dbSuppliers);
+      setPayments(dbPayments);
+      if (dbSettings) setSettings(dbSettings);
+      if (dbUsers.length > 0) {
+        setUsers(dbUsers);
+        setActiveUser(dbUsers[0]);
+      }
+
+      // 3. Cache clean database rows locally
+      StorageService.saveProducts(dbProducts);
+      StorageService.saveCustomers(dbCustomers);
+      StorageService.saveOrders(dbOrders);
+      StorageService.saveBrokenProducts(dbBroken);
+      StorageService.saveExpenses(dbExpenses);
+      StorageService.saveSuppliers(dbSuppliers);
+      StorageService.savePayments(dbPayments);
+      if (dbSettings) StorageService.saveSettings(dbSettings);
+      if (dbUsers.length > 0) StorageService.saveUsers(dbUsers);
+    } catch (e) {
+      console.error('Failed to load data from Supabase:', e);
+    } finally {
+      setIsLoaded(true);
+      setIsSyncing(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadDataFromSupabase();
+  }, [loadDataFromSupabase]);
+
   // Handlers for POS & Orders
-  const handleCompleteOrder = (newOrder: Order, updatedCustomer?: Customer) => {
+  const handleCompleteOrder = async (newOrder: Order, updatedCustomer?: Customer) => {
     const updatedOrders = [newOrder, ...orders];
     setOrders(updatedOrders);
     StorageService.saveOrders(updatedOrders);
@@ -75,9 +129,12 @@ export default function AppHome() {
       setCustomers(updatedCustomers);
       StorageService.saveCustomers(updatedCustomers);
     }
+
+    // Persist to Supabase Cloud Database
+    await SupabaseService.createOrder(newOrder, activeUser.id);
   };
 
-  const handleCancelOrder = (orderId: string) => {
+  const handleCancelOrder = async (orderId: string) => {
     const targetOrder = orders.find((o) => o.id === orderId);
     if (!targetOrder || targetOrder.status === 'cancelled') return;
 
@@ -87,10 +144,10 @@ export default function AppHome() {
     setOrders(updatedOrders);
     StorageService.saveOrders(updatedOrders);
 
-    // Rollback customer debt and bottle balance
+    // Rollback customer debt and bottle balance locally
+    const bottleDiff = targetOrder.containersDelivered20L - targetOrder.containersReturned20L;
     const cust = customers.find((c) => c.id === targetOrder.customerId);
     if (cust) {
-      const bottleDiff = targetOrder.containersDelivered20L - targetOrder.containersReturned20L;
       const updatedCust: Customer = {
         ...cust,
         totalDebtUsd: Math.max(0, Number((cust.totalDebtUsd - targetOrder.remainingDebtUsd).toFixed(2))),
@@ -100,31 +157,48 @@ export default function AppHome() {
       setCustomers(updatedCustomers);
       StorageService.saveCustomers(updatedCustomers);
     }
+
+    // Persist to Supabase
+    await SupabaseService.cancelOrder(
+      orderId,
+      targetOrder.customerId,
+      targetOrder.remainingDebtUsd,
+      bottleDiff
+    );
   };
 
-  const handleDeleteOrder = (orderId: string) => {
+  const handleDeleteOrder = async (orderId: string) => {
     const updated = orders.filter((o) => o.id !== orderId);
     setOrders(updated);
     StorageService.saveOrders(updated);
-    SupabaseSync.deleteOrder(orderId);
+    await SupabaseService.deleteOrder(orderId);
   };
 
   // Customers Handlers
-  const handleSaveCustomer = (cust: Customer) => {
+  const handleSaveCustomer = async (cust: Customer) => {
     const exists = customers.some((c) => c.id === cust.id);
     const updated = exists ? customers.map((c) => (c.id === cust.id ? cust : c)) : [cust, ...customers];
     setCustomers(updated);
     StorageService.saveCustomers(updated);
+
+    // Persist to Supabase
+    const saved = await SupabaseService.saveCustomer(cust);
+    if (saved && saved.id !== cust.id) {
+      // Update ID if newly generated
+      const refreshed = updated.map((c) => (c.id === cust.id ? saved : c));
+      setCustomers(refreshed);
+      StorageService.saveCustomers(refreshed);
+    }
   };
 
-  const handleDeleteCustomer = (customerId: string) => {
+  const handleDeleteCustomer = async (customerId: string) => {
     const updated = customers.filter((c) => c.id !== customerId);
     setCustomers(updated);
     StorageService.saveCustomers(updated);
-    SupabaseSync.deleteCustomer(customerId);
+    await SupabaseService.deleteCustomer(customerId);
   };
 
-  const handleAdjustBottleBalance = (customerId: string, delta: number, reason: string) => {
+  const handleAdjustBottleBalance = async (customerId: string, delta: number, reason: string) => {
     const updated = customers.map((c) => {
       if (c.id === customerId) {
         return {
@@ -136,73 +210,92 @@ export default function AppHome() {
     });
     setCustomers(updated);
     StorageService.saveCustomers(updated);
+    await SupabaseService.adjustCustomerBottleBalance(customerId, delta);
   };
 
   // Products Handlers
-  const handleSaveProduct = (prod: Product) => {
+  const handleSaveProduct = async (prod: Product) => {
     const exists = products.some((p) => p.id === prod.id);
     const updated = exists ? products.map((p) => (p.id === prod.id ? prod : p)) : [prod, ...products];
     setProducts(updated);
     StorageService.saveProducts(updated);
+
+    // Persist to Supabase
+    const saved = await SupabaseService.saveProduct(prod);
+    if (saved && saved.id !== prod.id) {
+      const refreshed = updated.map((p) => (p.id === prod.id ? saved : p));
+      setProducts(refreshed);
+      StorageService.saveProducts(refreshed);
+    }
   };
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     const updated = products.filter((p) => p.id !== productId);
     setProducts(updated);
     StorageService.saveProducts(updated);
-    SupabaseSync.deleteProduct(productId);
+    await SupabaseService.deleteProduct(productId);
   };
 
   // Broken Products Handlers
-  const handleAddBroken = (record: BrokenProduct) => {
+  const handleAddBroken = async (record: BrokenProduct) => {
     const updated = [record, ...brokenProducts];
     setBrokenProducts(updated);
     StorageService.saveBrokenProducts(updated);
+    await SupabaseService.addBrokenProduct(record, activeUser.id);
   };
 
-  const handleDeleteBroken = (id: string) => {
+  const handleDeleteBroken = async (id: string) => {
     const updated = brokenProducts.filter((b) => b.id !== id);
     setBrokenProducts(updated);
     StorageService.saveBrokenProducts(updated);
-    SupabaseSync.deleteBroken(id);
+    await SupabaseService.deleteBrokenProduct(id);
   };
 
   // Expenses Handlers
-  const handleAddExpense = (exp: OperationalExpense) => {
+  const handleAddExpense = async (exp: OperationalExpense) => {
     const updated = [exp, ...expenses];
     setExpenses(updated);
     StorageService.saveExpenses(updated);
+    await SupabaseService.addExpense(exp, activeUser.id);
   };
 
-  const handleDeleteExpense = (id: string) => {
+  const handleDeleteExpense = async (id: string) => {
     const updated = expenses.filter((e) => e.id !== id);
     setExpenses(updated);
     StorageService.saveExpenses(updated);
-    SupabaseSync.deleteExpense(id);
+    await SupabaseService.deleteExpense(id);
   };
 
   // Suppliers Handlers
-  const handleSaveSupplier = (sup: Supplier) => {
+  const handleSaveSupplier = async (sup: Supplier) => {
     const exists = suppliers.some((s) => s.id === sup.id);
     const updated = exists ? suppliers.map((s) => (s.id === sup.id ? sup : s)) : [sup, ...suppliers];
     setSuppliers(updated);
     StorageService.saveSuppliers(updated);
+
+    // Persist to Supabase
+    const saved = await SupabaseService.saveSupplier(sup);
+    if (saved && saved.id !== sup.id) {
+      const refreshed = updated.map((s) => (s.id === sup.id ? saved : s));
+      setSuppliers(refreshed);
+      StorageService.saveSuppliers(refreshed);
+    }
   };
 
-  const handleDeleteSupplier = (id: string) => {
+  const handleDeleteSupplier = async (id: string) => {
     const updated = suppliers.filter((s) => s.id !== id);
     setSuppliers(updated);
     StorageService.saveSuppliers(updated);
-    SupabaseSync.deleteSupplier(id);
+    await SupabaseService.deleteSupplier(id);
   };
 
   // Debt Payment Handler
-  const handleRecordPayment = (payment: CustomerPayment) => {
+  const handleRecordPayment = async (payment: CustomerPayment) => {
     const updatedPayments = [payment, ...payments];
     setPayments(updatedPayments);
     StorageService.savePayments(updatedPayments);
 
-    // Deduct debt from customer
+    // Deduct debt from customer locally
     const cust = customers.find((c) => c.id === payment.customerId);
     if (cust) {
       const updatedCust: Customer = {
@@ -213,16 +306,18 @@ export default function AppHome() {
       setCustomers(updatedCustomers);
       StorageService.saveCustomers(updatedCustomers);
     }
+
+    // Persist to Supabase
+    await SupabaseService.recordPayment(payment, activeUser.id);
   };
 
-  const handleDeletePayment = (paymentId: string) => {
+  const handleDeletePayment = async (paymentId: string) => {
     const target = payments.find((p) => p.id === paymentId);
     const updated = payments.filter((p) => p.id !== paymentId);
     setPayments(updated);
     StorageService.savePayments(updated);
-    SupabaseSync.deletePayment(paymentId);
 
-    // Revert debt back to customer
+    // Revert debt back to customer locally
     if (target) {
       const cust = customers.find((c) => c.id === target.customerId);
       if (cust) {
@@ -234,32 +329,29 @@ export default function AppHome() {
         setCustomers(updatedCustomers);
         StorageService.saveCustomers(updatedCustomers);
       }
+      await SupabaseService.deletePayment(paymentId, target.customerId, target.equivalentUsd);
+    } else {
+      await SupabaseService.deletePayment(paymentId);
     }
   };
 
   // Settings Handlers
-  const handleSaveSettings = (newSettings: SystemSettings) => {
+  const handleSaveSettings = async (newSettings: SystemSettings) => {
     setSettings(newSettings);
     StorageService.saveSettings(newSettings);
+    await SupabaseService.saveSettings(newSettings);
   };
 
-  const handleUpdateExchangeRate = (newRate: number) => {
+  const handleUpdateExchangeRate = async (newRate: number) => {
     const newSettings = { ...settings, exchangeRateKhrPerUsd: newRate };
     setSettings(newSettings);
     StorageService.saveSettings(newSettings);
+    await SupabaseService.saveSettings(newSettings);
   };
 
-  const handleResetData = () => {
-    StorageService.resetFactoryData();
-    setProducts(StorageService.getProducts());
-    setCustomers(StorageService.getCustomers());
-    setOrders([]);
-    setBrokenProducts(StorageService.getBrokenProducts());
-    setExpenses(StorageService.getExpenses());
-    setSuppliers(StorageService.getSuppliers());
-    setPayments([]);
-    setSettings(StorageService.getSettings());
-    setUsers(StorageService.getUsers());
+  const handleResetData = async () => {
+    StorageService.clearLocalDemoData();
+    await loadDataFromSupabase();
   };
 
   if (!isLoaded) {
@@ -267,7 +359,7 @@ export default function AppHome() {
       <div className="h-screen w-screen flex items-center justify-center bg-slate-950 text-white">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-semibold text-slate-400">កំពុងដំណើរការប្រព័ន្ធរោងចក្រទឹក...</p>
+          <p className="text-xs font-semibold text-slate-400">កំពុងទាញយកទិន្នន័យពី Supabase Database...</p>
         </div>
       </div>
     );

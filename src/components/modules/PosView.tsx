@@ -28,6 +28,7 @@ import {
   SystemSettings,
   UserAccount,
 } from '@/types/water-factory';
+import { generateUuid } from '@/lib/supabase-service';
 import {
   usdToKhr,
   formatUsd,
@@ -119,7 +120,7 @@ export const PosView: React.FC<PosViewProps> = ({
       setCart(updated);
     } else {
       const newItem: CartItem = {
-        id: `cart-item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        id: generateUuid(),
         productId: product.id,
         productNameKh: product.nameKh,
         unit: product.unit,
@@ -194,7 +195,7 @@ export const PosView: React.FC<PosViewProps> = ({
     if (!newCustName.trim()) return;
 
     const newCustomer: Customer = {
-      id: `cust-${Date.now()}`,
+      id: generateUuid(),
       customerCode: `CUST-${String(customers.length + 1).padStart(3, '0')}`,
       fullName: newCustName.trim(),
       phoneNumber: newCustPhone.trim() || 'N/A',
@@ -241,7 +242,7 @@ export const PosView: React.FC<PosViewProps> = ({
     }
 
     const newOrder: Order = {
-      id: `ord-${Date.now()}`,
+      id: generateUuid(),
       invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.fullName,
@@ -291,11 +292,10 @@ export const PosView: React.FC<PosViewProps> = ({
         <button
           type="button"
           onClick={() => setPosMobileTab('catalog')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-            posMobileTab === 'catalog'
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${posMobileTab === 'catalog'
               ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30'
               : 'text-slate-400 hover:text-white'
-          }`}
+            }`}
         >
           <Package className="w-4 h-4" />
           <span>មុខទំនិញ (Catalog)</span>
@@ -306,11 +306,10 @@ export const PosView: React.FC<PosViewProps> = ({
         <button
           type="button"
           onClick={() => setPosMobileTab('cart')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all relative ${
-            posMobileTab === 'cart'
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all relative ${posMobileTab === 'cart'
               ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30'
               : 'text-slate-400 hover:text-white'
-          }`}
+            }`}
         >
           <ShoppingCart className="w-4 h-4" />
           <span>កន្ត្រក & គិតប្រាក់ (Cart)</span>
@@ -326,9 +325,8 @@ export const PosView: React.FC<PosViewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 lg:h-[calc(100vh-6rem)]">
         {/* LEFT: Products Catalog Grid (7 Cols on desktop, full on mobile when catalog active) */}
         <div
-          className={`lg:col-span-7 flex flex-col h-[calc(100vh-14rem)] lg:h-full bg-slate-900/80 rounded-3xl border border-slate-800 p-3 sm:p-4 overflow-hidden ${
-            posMobileTab === 'catalog' ? 'flex' : 'hidden lg:flex'
-          }`}
+          className={`lg:col-span-7 flex flex-col h-[calc(100vh-14rem)] lg:h-full bg-slate-900/80 rounded-3xl border border-slate-800 p-3 sm:p-4 overflow-hidden ${posMobileTab === 'catalog' ? 'flex' : 'hidden lg:flex'
+            }`}
         >
           {/* Search & Filter Header */}
           <div className="flex items-center gap-3 mb-3 sm:mb-4">
@@ -390,9 +388,8 @@ export const PosView: React.FC<PosViewProps> = ({
 
         {/* RIGHT: POS Order Cart & Checkout (5 Cols on desktop, full on mobile when cart active) */}
         <div
-          className={`lg:col-span-5 flex flex-col h-auto lg:h-full bg-slate-900/90 rounded-3xl border border-slate-800 p-3 sm:p-4 overflow-hidden ${
-            posMobileTab === 'cart' ? 'flex' : 'hidden lg:flex'
-          }`}
+          className={`lg:col-span-5 flex flex-col h-auto lg:h-full bg-slate-900/90 rounded-3xl border border-slate-800 p-3 sm:p-4 overflow-hidden ${posMobileTab === 'cart' ? 'flex' : 'hidden lg:flex'
+            }`}
         >
           {/* Mobile Back Button to Catalog */}
           <div className="lg:hidden pb-2.5 mb-2 border-b border-slate-800 flex items-center justify-between">
@@ -437,220 +434,216 @@ export const PosView: React.FC<PosViewProps> = ({
             </button>
           </div>
 
-        {/* Customer Status Bar */}
-        {selectedCustomer && (
-          <div className="py-2 px-3 my-2 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-[11px]">
-            <div>
-              <span className="text-slate-400">ជំពាក់លុយចាស់៖ </span>
-              <span className={selectedCustomer.totalDebtUsd > 0 ? 'font-bold text-rose-400' : 'text-slate-300'}>
-                {formatUsd(selectedCustomer.totalDebtUsd)}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400">សំបកធុងកាន់កាប់៖ </span>
-              <span className="font-bold text-cyan-300 px-1.5 py-0.2 bg-cyan-950 rounded border border-cyan-800/40">
-                {selectedCustomer.emptyContainersHeld} ធុង
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Cart Items List */}
-        <div className="flex-1 overflow-y-auto py-2 space-y-2 pr-1">
-          {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
-              <Droplets className="w-10 h-10 text-slate-700 mb-2" />
-              <p>មិនទាន់មានទំនិញក្នុងកន្ត្រកទេ។</p>
-              <p className="text-[10px] text-slate-600">សូមចុចលើផលិតផលនៅខាងឆ្វេង</p>
-            </div>
-          ) : (
-            cart.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-slate-800 text-xs"
-              >
-                <div className="flex-1 pr-2">
-                  <p className="font-bold text-white leading-tight">{item.productNameKh}</p>
-                  <p className="text-[10px] text-slate-400">
-                    ${item.unitPriceUsd.toFixed(2)} × {item.quantity} ={' '}
-                    <span className="text-cyan-400 font-semibold">${item.totalUsd.toFixed(2)}</span>
-                  </p>
-                </div>
-
-                {/* Quantity Controls */}
-                <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
-                  <button
-                    onClick={() => handleUpdateQuantity(item.productId, -1)}
-                    className="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="w-6 text-center font-bold text-white text-xs">{item.quantity}</span>
-                  <button
-                    onClick={() => handleUpdateQuantity(item.productId, 1)}
-                    className="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => handleRemoveItem(item.productId)}
-                  className="ml-2 p-1 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+          {/* Customer Status Bar */}
+          {selectedCustomer && (
+            <div className="py-2 px-3 my-2 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-[11px]">
+              <div>
+                <span className="text-slate-400">ជំពាក់លុយចាស់៖ </span>
+                <span className={selectedCustomer.totalDebtUsd > 0 ? 'font-bold text-rose-400' : 'text-slate-300'}>
+                  {formatUsd(selectedCustomer.totalDebtUsd)}
+                </span>
               </div>
-            ))
+              <div>
+                <span className="text-slate-400">សំបកធុងកាន់កាប់៖ </span>
+                <span className="font-bold text-cyan-300 px-1.5 py-0.2 bg-cyan-950 rounded border border-cyan-800/40">
+                  {selectedCustomer.emptyContainersHeld} ធុង
+                </span>
+              </div>
+            </div>
           )}
-        </div>
 
-        {/* 20L Empty Container Exchange Module */}
-        <div className="p-3 my-2 rounded-2xl bg-cyan-950/20 border border-cyan-800/40 text-xs space-y-2">
-          <div className="flex items-center justify-between font-bold text-cyan-300">
-            <span className="flex items-center gap-1.5">
-              <PackageCheck className="w-4 h-4 text-cyan-400" />
-              ចរន្តសំបកធុង ២០L (Empty Bottle Exchange)
-            </span>
-            <span className="text-[10px] text-cyan-400 font-normal">
-              សល់ចុងក្រោយ: {selectedCustomer.emptyContainersHeld + (containersDelivered20L - containersReturned20L)} ធុង
-            </span>
+          {/* Cart Items List */}
+          <div className="flex-1 overflow-y-auto py-2 space-y-2 pr-1">
+            {cart.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
+                <Droplets className="w-10 h-10 text-slate-700 mb-2" />
+                <p>មិនទាន់មានទំនិញក្នុងកន្ត្រកទេ។</p>
+                <p className="text-[10px] text-slate-600">សូមចុចលើផលិតផលនៅខាងឆ្វេង</p>
+              </div>
+            ) : (
+              cart.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-slate-800 text-xs"
+                >
+                  <div className="flex-1 pr-2">
+                    <p className="font-bold text-white leading-tight">{item.productNameKh}</p>
+                    <p className="text-[10px] text-slate-400">
+                      ${item.unitPriceUsd.toFixed(2)} × {item.quantity} ={' '}
+                      <span className="text-cyan-400 font-semibold">${item.totalUsd.toFixed(2)}</span>
+                    </p>
+                  </div>
+
+                  {/* Quantity Controls */}
+                  <div className="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                    <button
+                      onClick={() => handleUpdateQuantity(item.productId, -1)}
+                      className="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="w-6 text-center font-bold text-white text-xs">{item.quantity}</span>
+                    <button
+                      onClick={() => handleUpdateQuantity(item.productId, 1)}
+                      className="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => handleRemoveItem(item.productId)}
+                    className="ml-2 p-1 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
-              <label className="block text-[10px] text-slate-400 mb-1">
-                ធុងទឹកដឹកទៅ (+Delivered)
-              </label>
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setContainersDelivered20L(Math.max(0, containersDelivered20L - 1))}
-                  className="px-2 py-0.5 bg-slate-800 rounded font-bold"
-                >
-                  -
-                </button>
-                <span className="font-bold text-cyan-300">{containersDelivered20L}</span>
-                <button
-                  type="button"
-                  onClick={() => setContainersDelivered20L(containersDelivered20L + 1)}
-                  className="px-2 py-0.5 bg-slate-800 rounded font-bold"
-                >
-                  +
-                </button>
+          {/* 20L Empty Container Exchange Module */}
+          <div className="p-3 my-2 rounded-2xl bg-cyan-950/20 border border-cyan-800/40 text-xs space-y-2">
+            <div className="flex items-center justify-between font-bold text-cyan-300">
+              <span className="flex items-center gap-1.5">
+                <PackageCheck className="w-4 h-4 text-cyan-400" />
+                ចរន្តសំបកធុង ២០L (Empty Bottle Exchange)
+              </span>
+              <span className="text-[10px] text-cyan-400 font-normal">
+                សល់ចុងក្រោយ: {selectedCustomer.emptyContainersHeld + (containersDelivered20L - containersReturned20L)} ធុង
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                <label className="block text-[10px] text-slate-400 mb-1">
+                  ធុងទឹកដឹកទៅ (+Delivered)
+                </label>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setContainersDelivered20L(Math.max(0, containersDelivered20L - 1))}
+                    className="px-2 py-0.5 bg-slate-800 rounded font-bold"
+                  >
+                    -
+                  </button>
+                  <span className="font-bold text-cyan-300">{containersDelivered20L}</span>
+                  <button
+                    type="button"
+                    onClick={() => setContainersDelivered20L(containersDelivered20L + 1)}
+                    className="px-2 py-0.5 bg-slate-800 rounded font-bold"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                <label className="block text-[10px] text-slate-400 mb-1">
+                  សំបកយកមកវិញ (-Returned)
+                </label>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setContainersReturned20L(Math.max(0, containersReturned20L - 1))}
+                    className="px-2 py-0.5 bg-slate-800 rounded font-bold"
+                  >
+                    -
+                  </button>
+                  <span className="font-bold text-emerald-400">{containersReturned20L}</span>
+                  <button
+                    type="button"
+                    onClick={() => setContainersReturned20L(containersReturned20L + 1)}
+                    className="px-2 py-0.5 bg-slate-800 rounded font-bold"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment & Totals Section */}
+          <div className="pt-2 border-t border-slate-800 space-y-2">
+            {/* Payment Method Selector (2 cols on small mobile, 4 cols on tablet & desktop) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] font-semibold">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash_khr')}
+                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'cash_khr'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  }`}
+              >
+                លុយរៀល (KHR)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash_usd')}
+                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'cash_usd'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  }`}
+              >
+                លុយដុល្លារ ($)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('khqr')}
+                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'khqr'
+                    ? 'bg-cyan-600 text-white border-cyan-500 shadow-sm font-bold'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  }`}
+              >
+                KHQR Scan
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('credit')}
+                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'credit'
+                    ? 'bg-rose-600 text-white border-rose-500 shadow-sm font-bold'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  }`}
+              >
+                ជំពាក់ (Credit)
+              </button>
+            </div>
+
+            {/* Grand Total Display */}
+            <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block truncate">សរុបត្រូវបង់ (Grand Total):</span>
+                <p className="text-lg sm:text-xl font-extrabold text-white truncate">{formatUsd(grandTotalUsd)}</p>
+              </div>
+              <div className="text-right min-w-0">
+                <span className="text-[10px] text-slate-400 block truncate">ជាប្រាក់រៀល:</span>
+                <p className="text-base sm:text-lg font-bold text-emerald-400 truncate">{formatKhr(grandTotalKhr)}</p>
               </div>
             </div>
 
-            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
-              <label className="block text-[10px] text-slate-400 mb-1">
-                សំបកយកមកវិញ (-Returned)
-              </label>
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setContainersReturned20L(Math.max(0, containersReturned20L - 1))}
-                  className="px-2 py-0.5 bg-slate-800 rounded font-bold"
-                >
-                  -
-                </button>
-                <span className="font-bold text-emerald-400">{containersReturned20L}</span>
-                <button
-                  type="button"
-                  onClick={() => setContainersReturned20L(containersReturned20L + 1)}
-                  className="px-2 py-0.5 bg-slate-800 rounded font-bold"
-                >
-                  +
-                </button>
-              </div>
+            {/* Actions: Clear & Checkout */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleClearCart}
+                disabled={cart.length === 0}
+                className="px-3.5 py-2.5 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-xl transition"
+                title="លុបកន្ត្រក"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCheckout}
+                disabled={cart.length === 0}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-40 shadow-lg shadow-cyan-600/30 transition transform active:scale-98"
+              >
+                <Receipt className="w-4 h-4" />
+                <span>ទូទាត់ & ចេញវិក្កយបត្រ (Checkout)</span>
+              </button>
             </div>
           </div>
         </div>
-
-        {/* Payment & Totals Section */}
-        <div className="pt-2 border-t border-slate-800 space-y-2">
-          {/* Payment Method Selector (2 cols on small mobile, 4 cols on tablet & desktop) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] font-semibold">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('cash_khr')}
-              className={`py-2 px-2 rounded-xl border transition text-center ${
-                paymentMethod === 'cash_khr'
-                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
-                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-              }`}
-            >
-              លុយរៀល (KHR)
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('cash_usd')}
-              className={`py-2 px-2 rounded-xl border transition text-center ${
-                paymentMethod === 'cash_usd'
-                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
-                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-              }`}
-            >
-              លុយដុល្លារ ($)
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('khqr')}
-              className={`py-2 px-2 rounded-xl border transition text-center ${
-                paymentMethod === 'khqr'
-                  ? 'bg-cyan-600 text-white border-cyan-500 shadow-sm font-bold'
-                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-              }`}
-            >
-              KHQR Scan
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod('credit')}
-              className={`py-2 px-2 rounded-xl border transition text-center ${
-                paymentMethod === 'credit'
-                  ? 'bg-rose-600 text-white border-rose-500 shadow-sm font-bold'
-                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-              }`}
-            >
-              ជំពាក់ (Credit)
-            </button>
-          </div>
-
-          {/* Grand Total Display */}
-          <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <span className="text-[10px] text-slate-400 block truncate">សរុបត្រូវបង់ (Grand Total):</span>
-              <p className="text-lg sm:text-xl font-extrabold text-white truncate">{formatUsd(grandTotalUsd)}</p>
-            </div>
-            <div className="text-right min-w-0">
-              <span className="text-[10px] text-slate-400 block truncate">ជាប្រាក់រៀល:</span>
-              <p className="text-base sm:text-lg font-bold text-emerald-400 truncate">{formatKhr(grandTotalKhr)}</p>
-            </div>
-          </div>
-
-          {/* Actions: Clear & Checkout */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleClearCart}
-              disabled={cart.length === 0}
-              className="px-3.5 py-2.5 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-xl transition"
-              title="លុបកន្ត្រក"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleCheckout}
-              disabled={cart.length === 0}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-40 shadow-lg shadow-cyan-600/30 transition transform active:scale-98"
-            >
-              <Receipt className="w-4 h-4" />
-              <span>ទូទាត់ & ចេញវិក្កយបត្រ (Checkout)</span>
-            </button>
-          </div>
-        </div>
+        {/* End Main Grid Workspace */}
       </div>
-      {/* End Main Grid Workspace */}
-    </div>
 
       {/* Floating Sticky Cart Bar on Mobile (< lg) when catalog active & has items */}
       {posMobileTab === 'catalog' && totalCartItems > 0 && (

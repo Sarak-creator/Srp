@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Customer, SystemSettings } from '@/types/water-factory';
 import { formatUsd, formatKhr, usdToKhr } from '@/lib/financial-engine';
+import { generateUuid } from '@/lib/supabase-service';
 
 interface CustomersViewProps {
   customers: Customer[];
@@ -79,7 +80,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     if (!fullName.trim()) return;
 
     const cust: Customer = {
-      id: editingCustomer ? editingCustomer.id : `cust-${Date.now()}`,
+      id: editingCustomer ? editingCustomer.id : generateUuid(),
       customerCode: editingCustomer
         ? editingCustomer.customerCode
         : `CUST-${String(customers.length + 1).padStart(3, '0')}`,

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Package, Plus, Edit2, Trash2, Droplets } from 'lucide-react';
 import { Product, ContainerUnit, SystemSettings } from '@/types/water-factory';
 import { usdToKhr } from '@/lib/financial-engine';
+import { generateUuid } from '@/lib/supabase-service';
 
 interface ProductsViewProps {
   products: Product[];
@@ -67,7 +68,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     const priceKhr = usdToKhr(price, settings.exchangeRateKhrPerUsd);
 
     const productData: Product = {
-      id: editingProduct ? editingProduct.id : `prod-${Date.now()}`,
+      id: editingProduct ? editingProduct.id : generateUuid(),
       productCode: productCode.trim() || `P-${Date.now().toString().slice(-4)}`,
       nameKh: nameKh.trim(),
       nameEn: nameEn.trim() || nameKh.trim(),

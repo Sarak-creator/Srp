@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, Plus, Trash2, ArrowDownRight } from 'lucide-react';
 import { BrokenProduct, Product, DamageReason, UserAccount } from '@/types/water-factory';
 import { formatUsd, calculateBrokenLoss } from '@/lib/financial-engine';
+import { generateUuid } from '@/lib/supabase-service';
 
 interface BrokenProductsViewProps {
   brokenProducts: BrokenProduct[];
@@ -39,7 +40,7 @@ export const BrokenProductsView: React.FC<BrokenProductsViewProps> = ({
     if (!selectedProduct || numQty <= 0) return;
 
     const newRecord: BrokenProduct = {
-      id: `brk-${Date.now()}`,
+      id: generateUuid(),
       incidentDate: new Date().toISOString().split('T')[0],
       productId: selectedProduct.id,
       productNameKh: selectedProduct.nameKh,

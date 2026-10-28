@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { DollarSign, Plus, Trash2, Zap, Fuel, UserCheck, Wrench, FileText } from 'lucide-react';
 import { OperationalExpense, ExpenseCategory, SystemSettings, UserAccount } from '@/types/water-factory';
 import { formatUsd, formatKhr, khrToUsd, usdToKhr } from '@/lib/financial-engine';
+import { generateUuid } from '@/lib/supabase-service';
 
 interface ExpensesViewProps {
   expenses: OperationalExpense[];
@@ -66,7 +67,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     }
 
     const newExpense: OperationalExpense = {
-      id: `exp-${Date.now()}`,
+      id: generateUuid(),
       expenseDate: new Date().toISOString().split('T')[0],
       category,
       title: title.trim(),

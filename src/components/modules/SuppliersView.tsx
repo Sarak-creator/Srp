@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Truck, Plus, Phone, MapPin, Wrench, PackageCheck, Trash2 } from 'lucide-react';
 import { Supplier } from '@/types/water-factory';
+import { generateUuid } from '@/lib/supabase-service';
 
 interface SuppliersViewProps {
   suppliers: Supplier[];
@@ -27,7 +28,7 @@ export const SuppliersView: React.FC<SuppliersViewProps> = ({
     if (!supplierName.trim() || !phoneNumber.trim()) return;
 
     const newSup: Supplier = {
-      id: `sup-${Date.now()}`,
+      id: generateUuid(),
       supplierName: supplierName.trim(),
       contactPerson: contactPerson.trim() || 'N/A',
       phoneNumber: phoneNumber.trim(),

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CreditCard, DollarSign, CheckCircle2, History, ArrowDownLeft, Trash2 } from 'lucide-react';
 import { Customer, CustomerPayment, PaymentMethod, SystemSettings, UserAccount } from '@/types/water-factory';
 import { formatUsd, formatKhr, khrToUsd, usdToKhr } from '@/lib/financial-engine';
+import { generateUuid } from '@/lib/supabase-service';
 
 interface DebtViewProps {
   customers: Customer[];
@@ -58,7 +59,7 @@ export const DebtView: React.FC<DebtViewProps> = ({
     if (usdVal <= 0) return;
 
     const payment: CustomerPayment = {
-      id: `pay-${Date.now()}`,
+      id: generateUuid(),
       receiptNumber: `PAY-${Date.now().toString().slice(-6)}`,
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.fullName,
