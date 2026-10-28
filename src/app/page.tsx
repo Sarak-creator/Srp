@@ -16,6 +16,7 @@ import {
 } from '@/types/water-factory';
 import { HeaderBar } from '@/components/layout/HeaderBar';
 import { Sidebar, ActiveModule } from '@/components/layout/Sidebar';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { DashboardView } from '@/components/modules/DashboardView';
 import { PosView } from '@/components/modules/PosView';
 import { OrderHistoryView } from '@/components/modules/OrderHistoryView';
@@ -30,6 +31,7 @@ import { SettingsView } from '@/components/modules/SettingsView';
 
 export default function AppHome() {
   const [activeModule, setActiveModule] = useState<ActiveModule>('dashboard');
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Core Data State
@@ -281,22 +283,31 @@ export default function AppHome() {
       <HeaderBar
         settings={settings}
         activeUser={activeUser}
-        onOpenPos={() => setActiveModule('pos')}
+        onOpenPos={() => {
+          setActiveModule('pos');
+          setIsMobileDrawerOpen(false);
+        }}
         onUpdateRate={handleUpdateExchangeRate}
+        onToggleMobileMenu={() => setIsMobileDrawerOpen((prev) => !prev)}
       />
 
       {/* Main Workspace with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Navigation Sidebar */}
+        {/* Navigation Sidebar (Desktop + Mobile Slide-over Drawer) */}
         <Sidebar
           activeModule={activeModule}
-          onSelectModule={setActiveModule}
+          onSelectModule={(mod) => {
+            setActiveModule(mod);
+            setIsMobileDrawerOpen(false);
+          }}
           uncollectedDebtCount={uncollectedDebtCount}
           emptyBottleHoldersCount={emptyBottleHoldersCount}
+          isMobileOpen={isMobileDrawerOpen}
+          onCloseMobile={() => setIsMobileDrawerOpen(false)}
         />
 
-        {/* Dynamic Content Pane for the 11 Modules */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-slate-950/60">
+        {/* Dynamic Content Pane for the 11 Modules (responsive padding with pb-24 for mobile nav bar) */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 bg-slate-950/60 pb-24 lg:pb-6">
           {activeModule === 'dashboard' && (
             <DashboardView
               orders={orders}
@@ -408,6 +419,19 @@ export default function AppHome() {
           )}
         </main>
       </div>
+
+      {/* Modern Responsive Mobile Bottom Navigation Bar (< lg devices) */}
+      <MobileBottomNav
+        activeModule={activeModule}
+        onSelectModule={(mod) => {
+          setActiveModule(mod);
+          setIsMobileDrawerOpen(false);
+        }}
+        onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
+        isMobileDrawerOpen={isMobileDrawerOpen}
+        uncollectedDebtCount={uncollectedDebtCount}
+        emptyBottleHoldersCount={emptyBottleHoldersCount}
+      />
     </div>
   );
 }
