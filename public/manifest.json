@@ -22,6 +22,12 @@
   ],
   "icons": [
     {
+      "src": "/srp_logo_option3_nature_crest.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",

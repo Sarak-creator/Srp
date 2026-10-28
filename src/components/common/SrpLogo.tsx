@@ -15,7 +15,7 @@ export const SrpLogo: React.FC<SrpLogoProps> = ({
   showText = true,
   className = '',
   subtitle = 'PURE WATER',
-  logoSrc = '/srp_logo_option1_minimalist.jpg',
+  logoSrc = '/srp_logo_option3_nature_crest.jpg',
 }) => {
   const getDimension = () => {
     if (typeof size === 'number') return size;

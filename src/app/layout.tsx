@@ -25,14 +25,14 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: '/srp_logo_option3_nature_crest.jpg', type: 'image/jpeg' },
       { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/icon.svg',
+    shortcut: '/srp_logo_option3_nature_crest.jpg',
     apple: [
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/srp_logo_option3_nature_crest.jpg', sizes: '180x180', type: 'image/jpeg' },
     ],
   },
 };
@@ -51,7 +51,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="SRP ERP" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/srp_logo_option3_nature_crest.jpg" />
       </head>
       <body className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-brand-500 selection:text-white">
         {children}
