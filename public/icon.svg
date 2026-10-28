@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#06b6d4" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background Rounded Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  <rect x="8" y="8" width="496" height="496" rx="120" fill="none" stroke="#1e293b" stroke-width="4"/>
+
+  <!-- Glowing Water Droplet -->
+  <g filter="url(#glow)">
+    <path d="M256 80 C256 80 144 230 144 320 C144 381.85 194.15 432 256 432 C317.85 432 368 381.85 368 320 C368 230 256 80 256 80 Z" fill="url(#waterGrad)"/>
+  </g>
+
+  <!-- Internal Droplet Highlight Reflection -->
+  <path d="M256 130 C256 130 180 240 180 310 C180 330 190 350 206 364 C194 340 196 300 220 250 C234 220 256 130 256 130 Z" fill="#ffffff" opacity="0.45"/>
+
+  <!-- SRP Text Lettermark inside droplet -->
+  <text x="256" y="340" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="64" fill="#ffffff" text-anchor="middle" letter-spacing="4">SRP</text>
+  <text x="256" y="375" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="20" fill="#bae6fd" text-anchor="middle" letter-spacing="2">WATER ERP</text>
+</svg>
+
