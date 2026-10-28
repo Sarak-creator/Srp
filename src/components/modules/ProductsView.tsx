@@ -151,8 +151,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         </div>
       </div>
 
-      {/* Products Grid - MyPOS Inspired Product Showcase Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Products Grid - MyPOS Inspired Product Showcase Cards (Adaptive Multi-Screen & Strict Uniform Geometry) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 min-[1920px]:grid-cols-7 gap-3 sm:gap-4 items-stretch content-start">
         {products.map((product) => {
           const retailKhrVal = product.retailPriceKhr || product.salePriceKhr || 0;
           const wholesaleKhrVal = product.wholesalePriceKhr || 0;
@@ -165,11 +165,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           return (
             <article
               key={product.id}
-              className="group relative flex flex-col justify-between rounded-3xl border border-slate-800/90 bg-slate-900/95 p-4 text-left shadow-lg hover:border-cyan-500/60 hover:shadow-2xl hover:shadow-cyan-950/30 transition-all duration-300 select-none overflow-hidden"
+              className="group relative flex flex-col justify-between h-full rounded-2xl sm:rounded-3xl border border-slate-800/90 bg-slate-900/95 p-3 sm:p-3.5 text-left shadow-md hover:border-cyan-500/60 hover:shadow-xl hover:shadow-cyan-950/20 transition-all duration-200 select-none overflow-hidden"
             >
-              <div>
-                {/* 1. MyPOS Style Aspect-Ratio Product Visual Showcase */}
-                <div className="relative mb-3.5 w-full aspect-[16/10] rounded-2xl overflow-hidden border border-slate-800/80 bg-slate-950 flex items-center justify-center group-hover:border-slate-700 transition">
+              {/* TOP SECTION: Visual & Info */}
+              <div className="flex flex-col">
+                {/* 1. MyPOS Style Strict Aspect-Ratio Product Visual Showcase */}
+                <div className="relative w-full aspect-[16/10] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-800/80 bg-slate-950 shrink-0 flex items-center justify-center group-hover:border-slate-700 transition">
                   <ProductVisual
                     unit={product.unit}
                     isRefill20l={product.isRefill20l}
@@ -177,118 +178,126 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   />
 
                   {/* Top-Left Floating Code Badge */}
-                  <div className="absolute top-2.5 left-2.5 z-10">
-                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-slate-950/85 backdrop-blur-md text-cyan-400 border border-slate-700/80 shadow-md flex items-center gap-1">
-                      <Barcode className="w-3 h-3 text-cyan-400/80" />
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="px-2 py-0.5 rounded-md text-[9px] font-mono font-bold bg-slate-950/85 backdrop-blur-md text-cyan-400 border border-slate-700/80 shadow-xs flex items-center gap-1">
+                      <Barcode className="w-2.5 h-2.5 text-cyan-400/80" />
                       {product.productCode}
                     </span>
                   </div>
 
                   {/* Top-Right Floating Unit Badge */}
-                  <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
-                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-cyan-950/85 backdrop-blur-md text-cyan-300 border border-cyan-700/60 shadow-md">
+                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-cyan-950/85 backdrop-blur-md text-cyan-300 border border-cyan-700/60 shadow-xs">
                       {getUnitLabel(product.unit)}
                     </span>
                   </div>
 
                   {/* Bottom-Left Floating Refill Pill (if 20L) */}
                   {product.isRefill20l && (
-                    <div className="absolute bottom-2.5 left-2.5 z-10">
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-blue-950/90 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-xs flex items-center gap-1">
-                        <Droplets className="w-2.5 h-2.5 text-cyan-400 fill-cyan-400" />
+                    <div className="absolute bottom-2 left-2 z-10">
+                      <span className="px-1.5 py-0.5 rounded-md text-[8px] font-bold bg-blue-950/90 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-xs flex items-center gap-1">
+                        <Droplets className="w-2 h-2 text-cyan-400 fill-cyan-400" />
                         ប្តូរសំបក ២០L
                       </span>
                     </div>
                   )}
                 </div>
 
-                {/* 2. Product Name & Subtitle */}
-                <div className="space-y-1">
+                {/* 2. Standardized Fixed-Height Title & Subtitle (Strictly 40px) */}
+                <div className="mt-2 sm:mt-2.5 h-10 flex flex-col justify-start overflow-hidden">
                   <h3
                     title={product.nameKh}
-                    className="text-base font-black text-white group-hover:text-cyan-300 transition-colors line-clamp-1 leading-snug"
+                    className="text-xs sm:text-sm font-black text-white group-hover:text-cyan-300 transition-colors line-clamp-1 leading-snug"
                   >
                     {product.nameKh}
                   </h3>
-                  <p className="text-xs text-slate-400 font-medium truncate">
-                    {product.nameEn || 'SRP Pure Bottled Water'}
+                  <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate mt-0.5">
+                    {product.nameEn || 'SRP Pure Water'}
                   </p>
                 </div>
               </div>
 
-              {/* 3. MyPOS Dual-Pricing Layout (Retail & Wholesale) */}
-              <div className="mt-4 pt-3.5 border-t border-slate-800/80 space-y-2.5">
-                <div className="grid grid-cols-2 gap-2.5">
+              {/* BOTTOM SECTION: Uniform Pricing & Actions */}
+              <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 space-y-2">
+                {/* Dual-Pricing Boxes (Fixed-height per box for strict uniformity) */}
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                   {/* Retail Box */}
-                  <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90 group-hover:border-slate-700/90 transition">
-                    <div className="flex items-center justify-between text-[10px] text-cyan-400 font-bold mb-1">
-                      <span className="flex items-center gap-1">
-                        <Tag className="w-3 h-3" />
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 group-hover:border-slate-700/80 transition h-[64px] sm:h-[68px] flex flex-col justify-between overflow-hidden">
+                    <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-cyan-400 font-bold">
+                      <span className="flex items-center gap-1 truncate">
+                        <Tag className="w-2.5 h-2.5 shrink-0" />
                         តម្លៃរាយ
                       </span>
                     </div>
-                    <div className="text-base font-black font-mono text-cyan-300 leading-tight">
+                    <div className="text-xs sm:text-sm lg:text-base font-black font-mono text-cyan-300 leading-tight truncate">
                       {formatCurrency(retailKhrVal, 'KHR')}
                     </div>
-                    <div className="text-[10px] text-slate-500 font-mono mt-0.5 font-medium">
+                    <div className="text-[8px] sm:text-[9px] text-slate-500 font-mono font-medium truncate">
                       ≈ {formatCurrency(product.retailPriceUsd || khrToUsd(retailKhrVal, settings.exchangeRateKhrPerUsd), 'USD')}
                     </div>
                   </div>
 
                   {/* Wholesale Box */}
-                  <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90 group-hover:border-slate-700/90 transition">
-                    <div className="flex items-center justify-between text-[10px] text-emerald-400 font-bold mb-1">
-                      <span className="flex items-center gap-1">
-                        <Layers className="w-3 h-3" />
+                  <div className="p-1.5 sm:p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 group-hover:border-slate-700/80 transition h-[64px] sm:h-[68px] flex flex-col justify-between overflow-hidden">
+                    <div className="flex items-center justify-between text-[8px] sm:text-[9px] text-emerald-400 font-bold">
+                      <span className="flex items-center gap-1 truncate">
+                        <Layers className="w-2.5 h-2.5 shrink-0" />
                         តម្លៃដុំ
                       </span>
                       {discountPercent > 0 && (
-                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        <span className="text-[8px] font-black px-1 rounded bg-emerald-500/20 text-emerald-300 shrink-0">
                           -{discountPercent}%
                         </span>
                       )}
                     </div>
-                    <div className="text-base font-black font-mono text-emerald-400 leading-tight">
+                    <div className="text-xs sm:text-sm lg:text-base font-black font-mono text-emerald-400 leading-tight truncate">
                       {formatCurrency(wholesaleKhrVal, 'KHR')}
                     </div>
-                    <div className="text-[10px] text-slate-500 font-mono mt-0.5 font-medium">
+                    <div className="text-[8px] sm:text-[9px] text-slate-500 font-mono font-medium truncate">
                       ≈ {formatCurrency(product.wholesalePriceUsd || khrToUsd(wholesaleKhrVal, settings.exchangeRateKhrPerUsd), 'USD')}
                     </div>
                   </div>
                 </div>
 
-                {/* Wholesale Discount indicator */}
-                {diffKhr > 0 && (
-                  <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-950 border border-emerald-900/30 text-[11px]">
-                    <span className="text-slate-400 font-medium">ចំណេញពេលទិញដុំ:</span>
-                    <span className="font-bold text-emerald-400 font-mono">
-                      -{formatCurrency(diffKhr, 'KHR')} ({discountPercent}%)
-                    </span>
-                  </div>
-                )}
+                {/* Uniform 1-Line Info Strip (Always present to guarantee 100% equal card height) */}
+                <div className="h-6 flex items-center justify-between px-2 sm:px-2.5 rounded-lg bg-slate-950/60 border border-slate-800/70 text-[9px] sm:text-[10px] overflow-hidden">
+                  {diffKhr > 0 ? (
+                    <>
+                      <span className="text-slate-400 font-medium truncate">ចំណេញទិញដុំ:</span>
+                      <span className="font-bold text-emerald-400 font-mono shrink-0">
+                        -{formatCurrency(diffKhr, 'KHR')}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-slate-500 font-medium truncate">តម្លៃស្តង់ដារ:</span>
+                      <span className="font-medium text-slate-500 font-mono shrink-0">តម្លៃរាយ/ដុំស្មើគ្នា</span>
+                    </>
+                  )}
+                </div>
 
-                {/* 4. Footer Action Bar (MyPOS style) */}
-                <div className="pt-2.5 flex items-center justify-between border-t border-slate-800/50">
+                {/* Footer Action Bar (Fixed 36px Height) */}
+                <div className="pt-2 flex items-center justify-between border-t border-slate-800/50 h-9 shrink-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[11px] text-slate-400 font-medium">ផលិតផលសកម្ម</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[10px] text-slate-400 font-medium">សកម្ម</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => openEditModal(product)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-cyan-600 hover:text-white text-slate-300 text-xs font-bold transition shadow-xs active:scale-95"
+                      className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-cyan-600 hover:text-white text-slate-300 text-xs font-bold transition shadow-2xs active:scale-95"
                       title="កែប្រែផលិតផល"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      <span>កែប្រែ</span>
+                      <Edit2 className="w-3 h-3 shrink-0" />
+                      <span className="text-[11px] hidden min-[360px]:inline">កែប្រែ</span>
                     </button>
                     <button
                       onClick={() => handleDelete(product)}
-                      className="p-1.5 rounded-xl bg-slate-800/90 hover:bg-rose-600 hover:text-white text-slate-400 text-xs transition shadow-xs active:scale-95"
+                      className="p-1 rounded-lg bg-slate-800/90 hover:bg-rose-600 hover:text-white text-slate-400 text-xs transition shadow-2xs active:scale-95"
                       title="លុបផលិតផល"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 </div>

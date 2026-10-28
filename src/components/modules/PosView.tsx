@@ -406,8 +406,8 @@ export const PosView: React.FC<PosViewProps> = ({
             </span>
           </div>
 
-          {/* Product Cards Grid - MyPOS Inspired Product Showcase */}
-          <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {/* Product Cards Grid - MyPOS Inspired Responsive Adaptive Grid */}
+          <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 min-[1920px]:grid-cols-5 min-[2400px]:grid-cols-6 gap-2.5 sm:gap-3 items-stretch content-start">
             {filteredProducts.map((product) => {
               const is20L = product.isRefill20l;
               const retailPrice = product.retailPriceKhr || product.salePriceKhr || 0;
@@ -423,15 +423,15 @@ export const PosView: React.FC<PosViewProps> = ({
                 <article
                   key={product.id}
                   onClick={() => handleAddToCart(product)}
-                  className={`group relative flex flex-col justify-between p-3 sm:p-3.5 rounded-3xl border text-left transition-all duration-200 select-none cursor-pointer active:scale-[0.98] ${
+                  className={`group relative flex flex-col justify-between h-full p-2.5 sm:p-3 rounded-2xl sm:rounded-3xl border text-left transition-all duration-200 select-none cursor-pointer active:scale-[0.98] overflow-hidden ${
                     isInCart
                       ? 'bg-slate-900 border-cyan-500/80 shadow-lg shadow-cyan-950/40 ring-1 ring-cyan-500/30'
                       : 'bg-slate-900/90 hover:bg-slate-900 border-slate-800 hover:border-cyan-500/50 shadow-sm hover:shadow-md'
                   }`}
                 >
-                  <div>
-                    {/* 1. MyPOS Style Aspect-Ratio Product Visual Showcase */}
-                    <div className="relative mb-2.5 w-full aspect-[16/10] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center group-hover:border-slate-700 transition">
+                  <div className="flex flex-col">
+                    {/* 1. Strict Aspect-Ratio Visual Banner */}
+                    <div className="relative w-full aspect-[16/10] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shrink-0 flex items-center justify-center group-hover:border-slate-700 transition">
                       <ProductVisual
                         unit={product.unit}
                         isRefill20l={product.isRefill20l}
@@ -466,34 +466,36 @@ export const PosView: React.FC<PosViewProps> = ({
                       )}
                     </div>
 
-                    {/* 2. Product Name & Subtitle */}
-                    <h4
-                      title={product.nameKh}
-                      className="text-xs sm:text-[13px] font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1 leading-snug"
-                    >
-                      {product.nameKh}
-                    </h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5 truncate font-medium">
-                      {product.nameEn || 'SRP Pure Water'}
-                    </p>
+                    {/* 2. Standardized Fixed-Height Title Block (Strictly 40px) */}
+                    <div className="mt-2 h-10 flex flex-col justify-start overflow-hidden">
+                      <h4
+                        title={product.nameKh}
+                        className="text-xs sm:text-[13px] font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1 leading-snug"
+                      >
+                        {product.nameKh}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5 truncate font-medium">
+                        {product.nameEn || 'SRP Pure Water'}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* 3. Footer: Active Price & MyPOS Action Button */}
-                  <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-baseline justify-between gap-1">
-                    <div>
+                  {/* 3. Footer: Active Price & MyPOS Action Button (Strictly Fixed Height 40px) */}
+                  <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1 h-10">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <span
-                          className={`text-sm sm:text-base font-black font-mono leading-none ${
+                          className={`text-xs sm:text-sm lg:text-base font-black font-mono leading-none truncate ${
                             priceMode === 'wholesale' ? 'text-emerald-400' : 'text-cyan-300'
                           }`}
                         >
                           {formatCurrency(activePrice, 'KHR')}
                         </span>
-                        <span className="text-[8px] font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-slate-800 text-slate-400">
+                        <span className="text-[8px] font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-slate-800 text-slate-400 shrink-0">
                           {priceMode === 'wholesale' ? 'ដុំ' : 'រាយ'}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                      <p className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
                         ≈ {formatCurrency(khrToUsd(activePrice, settings.exchangeRateKhrPerUsd), 'USD')}
                       </p>
                     </div>

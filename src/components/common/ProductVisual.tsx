@@ -176,3 +176,4 @@ export const ProductVisual: React.FC<ProductVisualProps> = ({
     </div>
   );
 };
+
