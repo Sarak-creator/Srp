@@ -1,25 +1,34 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Settings, DollarSign, Building, Users, Receipt, Shield, RefreshCw } from 'lucide-react';
-import { SystemSettings, UserAccount, UserRole } from '@/types/water-factory';
+import { Settings, DollarSign, Building, Users, Receipt, Shield, RefreshCw, Boxes, Plus, Edit2, Tag } from 'lucide-react';
+import { SystemSettings, UserAccount, UserRole, ContainerUnitItem, Product } from '@/types/water-factory';
+import { ContainerUnitsModal } from './ContainerUnitsModal';
 
 interface SettingsViewProps {
   settings: SystemSettings;
   users: UserAccount[];
   activeUser: UserAccount;
+  containerUnits?: ContainerUnitItem[];
+  products?: Product[];
   onSaveSettings: (settings: SystemSettings) => void;
   onSwitchUser: (user: UserAccount) => void;
   onResetData: () => void;
+  onSaveContainerUnit?: (unit: ContainerUnitItem) => Promise<boolean | ContainerUnitItem | null>;
+  onDeleteContainerUnit?: (id: string) => Promise<boolean>;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   settings,
   users,
   activeUser,
+  containerUnits = [],
+  products = [],
   onSaveSettings,
   onSwitchUser,
   onResetData,
+  onSaveContainerUnit,
+  onDeleteContainerUnit,
 }) => {
   // Form State
   const [factoryNameKh, setFactoryNameKh] = useState(settings.factoryNameKh);
@@ -29,6 +38,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [exchangeRate, setExchangeRate] = useState(settings.exchangeRateKhrPerUsd.toString());
   const [receiptFooterKh, setReceiptFooterKh] = useState(settings.receiptFooterKh);
   const [isSavedNotice, setIsSavedNotice] = useState(false);
+  const [isUnitsModalOpen, setIsUnitsModalOpen] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,6 +196,72 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </form>
 
+      {/* Container Units Management Section */}
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-xs font-bold text-white flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-cyan-400" />
+              គ្រប់គ្រងប្រភេទកញ្ចប់ និងឯកតាផលិតផល (Container Units Management)
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              បន្ថែម កែប្រែ ឬលុបឯកតាកញ្ចប់/ធុងទឹក (ធុង ២០L, យួរ ៣៥០ml, យួរ ៥០០ml, កំប៉ុង, ដប)
+            </p>
+          </div>
+          {onSaveContainerUnit && (
+            <button
+              onClick={() => setIsUnitsModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-md shadow-cyan-600/20 transition active:scale-95 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>បន្ថែម/កែប្រែឯកតា</span>
+            </button>
+          )}
+        </div>
+
+        {/* Units Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {containerUnits.map((u) => {
+            const usageCount = products.filter((p) => p.unit === u.code).length;
+            return (
+              <div
+                key={u.id}
+                className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 flex items-start justify-between gap-2 hover:border-slate-700 transition"
+              >
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-white">{u.nameKh}</span>
+                    {u.isDefault && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] text-slate-400">{u.nameEn}</div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 font-mono text-[10px] text-cyan-400">
+                      {u.code}
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      {usageCount} ផលិតផល
+                    </span>
+                  </div>
+                </div>
+                {onSaveContainerUnit && (
+                  <button
+                    onClick={() => setIsUnitsModalOpen(true)}
+                    className="p-1 rounded-lg text-slate-500 hover:text-cyan-400 hover:bg-slate-900 transition"
+                    title="កែប្រែឯកតា"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Role-Based Access Control / Switch User Section */}
       <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
         <h3 className="text-xs font-bold text-white flex items-center gap-2">
@@ -242,6 +318,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <span>កំណត់ទិន្នន័យដើមឡើងវិញ</span>
         </button>
       </div>
+
+      {/* Container Units Modal */}
+      {onSaveContainerUnit && onDeleteContainerUnit && (
+        <ContainerUnitsModal
+          isOpen={isUnitsModalOpen}
+          onClose={() => setIsUnitsModalOpen(false)}
+          containerUnits={containerUnits}
+          products={products}
+          onSaveUnit={onSaveContainerUnit}
+          onDeleteUnit={onDeleteContainerUnit}
+        />
+      )}
     </div>
   );
 };

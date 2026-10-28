@@ -10,6 +10,7 @@ import {
   SystemSettings,
   UserAccount,
   CustomerPayment,
+  ContainerUnitItem,
 } from '@/types/water-factory';
 import { DEFAULT_EXCHANGE_RATE } from './financial-engine';
 
@@ -1051,6 +1052,119 @@ export const SupabaseService = {
     } catch (e) {
       console.error('Unexpected error fetching users:', e);
       return [];
+    }
+  },
+
+  // ==========================================
+  // CONTAINER UNITS (DYNAMIC PACKAGING & UNITS)
+  // ==========================================
+  async fetchContainerUnits(): Promise<ContainerUnitItem[]> {
+    try {
+      const { data, error } = await supabase
+        .from('container_units')
+        .select('*')
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching container units from Supabase:', error.message);
+        return [];
+      }
+
+      return (data || []).map((row) => ({
+        id: row.id,
+        code: row.code,
+        nameKh: row.name_kh,
+        nameEn: row.name_en || '',
+        description: row.description || '',
+        isDefault: Boolean(row.is_default),
+        createdAt: row.created_at,
+      }));
+    } catch (e) {
+      console.error('Unexpected error fetching container units:', e);
+      return [];
+    }
+  },
+
+  async saveContainerUnit(item: ContainerUnitItem): Promise<ContainerUnitItem | null> {
+    try {
+      const isExisting = isUuid(item.id);
+      const payload: Record<string, any> = {
+        code: item.code.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+        name_kh: item.nameKh.trim(),
+        name_en: item.nameEn?.trim() || item.nameKh.trim(),
+        description: item.description?.trim() || null,
+        is_default: Boolean(item.isDefault),
+      };
+
+      if (isExisting) {
+        const { data, error } = await supabase
+          .from('container_units')
+          .update(payload)
+          .eq('id', item.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating container unit in Supabase:', error.message);
+          return null;
+        }
+
+        return {
+          id: data.id,
+          code: data.code,
+          nameKh: data.name_kh,
+          nameEn: data.name_en,
+          description: data.description || '',
+          isDefault: Boolean(data.is_default),
+          createdAt: data.created_at,
+        };
+      } else {
+        const newId = generateUuid();
+        payload.id = newId;
+
+        const { data, error } = await supabase
+          .from('container_units')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error inserting container unit in Supabase:', error.message);
+          return null;
+        }
+
+        return {
+          id: data.id,
+          code: data.code,
+          nameKh: data.name_kh,
+          nameEn: data.name_en,
+          description: data.description || '',
+          isDefault: Boolean(data.is_default),
+          createdAt: data.created_at,
+        };
+      }
+    } catch (e) {
+      console.error('Unexpected error saving container unit:', e);
+      return null;
+    }
+  },
+
+  async deleteContainerUnit(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('container_units')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting container unit from Supabase:', error.message);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error('Unexpected error deleting container unit:', e);
+      return false;
     }
   },
 };

@@ -13,6 +13,7 @@ import {
   SystemSettings,
   UserAccount,
   CustomerPayment,
+  ContainerUnitItem,
 } from '@/types/water-factory';
 import { HeaderBar } from '@/components/layout/HeaderBar';
 import { Sidebar, ActiveModule } from '@/components/layout/Sidebar';
@@ -59,6 +60,7 @@ export default function AppHome() {
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_CLEAN_SETTINGS);
   const [users, setUsers] = useState<UserAccount[]>([DEFAULT_CLEAN_USER]);
   const [activeUser, setActiveUser] = useState<UserAccount>(DEFAULT_CLEAN_USER);
+  const [containerUnits, setContainerUnits] = useState<ContainerUnitItem[]>([]);
 
   // Load live data from Supabase Cloud Database on Mount
   const loadDataFromSupabase = useCallback(async () => {
@@ -82,6 +84,7 @@ export default function AppHome() {
         dbPayments,
         dbSettings,
         dbUsers,
+        dbUnits,
       ] = await Promise.all([
         SupabaseService.fetchProducts(),
         SupabaseService.fetchCustomers(),
@@ -92,6 +95,7 @@ export default function AppHome() {
         SupabaseService.fetchPayments(),
         SupabaseService.fetchSettings(),
         SupabaseService.fetchUsers(),
+        SupabaseService.fetchContainerUnits(),
       ]);
 
       setProducts(dbProducts);
@@ -106,6 +110,7 @@ export default function AppHome() {
         setUsers(dbUsers);
         setActiveUser(dbUsers[0]);
       }
+      setContainerUnits(dbUnits);
 
       // 3. Cache clean database rows locally
       StorageService.saveProducts(dbProducts);
@@ -117,6 +122,7 @@ export default function AppHome() {
       StorageService.savePayments(dbPayments);
       if (dbSettings) StorageService.saveSettings(dbSettings);
       if (dbUsers.length > 0) StorageService.saveUsers(dbUsers);
+      StorageService.saveContainerUnits(dbUnits);
     } catch (e) {
       console.error('Failed to load data from Supabase:', e);
     } finally {
@@ -247,6 +253,47 @@ export default function AppHome() {
     setProducts(updated);
     StorageService.saveProducts(updated);
     await SupabaseService.deleteProduct(productId);
+  };
+
+  // Container Units Handlers (Dynamic Packaging & Units)
+  const handleSaveContainerUnit = async (
+    unitItem: ContainerUnitItem
+  ): Promise<boolean | ContainerUnitItem | null> => {
+    const exists = containerUnits.some((u) => u.id === unitItem.id || u.code === unitItem.code);
+    const updated = exists
+      ? containerUnits.map((u) => (u.id === unitItem.id || u.code === unitItem.code ? unitItem : u))
+      : [...containerUnits, unitItem];
+    setContainerUnits(updated);
+    StorageService.saveContainerUnits(updated);
+
+    const saved = await SupabaseService.saveContainerUnit(unitItem);
+    if (saved) {
+      const refreshed = updated.map((u) =>
+        u.id === unitItem.id || u.code === unitItem.code ? saved : u
+      );
+      setContainerUnits(refreshed);
+      StorageService.saveContainerUnits(refreshed);
+      return saved;
+    }
+    return false;
+  };
+
+  const handleDeleteContainerUnit = async (unitId: string): Promise<boolean> => {
+    const targetUnit = containerUnits.find((u) => u.id === unitId);
+    if (!targetUnit) return false;
+
+    // Safety: check if any product is using this unit
+    const isUsed = products.some((p) => p.unit === targetUnit.code);
+    if (isUsed) {
+      return false;
+    }
+
+    const updated = containerUnits.filter((u) => u.id !== unitId);
+    setContainerUnits(updated);
+    StorageService.saveContainerUnits(updated);
+
+    const ok = await SupabaseService.deleteContainerUnit(unitId);
+    return ok;
   };
 
   // Broken Products Handlers
@@ -457,8 +504,11 @@ export default function AppHome() {
             <ProductsView
               products={products}
               settings={settings}
+              containerUnits={containerUnits}
               onSaveProduct={handleSaveProduct}
               onDeleteProduct={handleDeleteProduct}
+              onSaveContainerUnit={handleSaveContainerUnit}
+              onDeleteContainerUnit={handleDeleteContainerUnit}
             />
           )}
 
@@ -526,9 +576,13 @@ export default function AppHome() {
               settings={settings}
               users={users}
               activeUser={activeUser}
+              containerUnits={containerUnits}
+              products={products}
               onSaveSettings={handleSaveSettings}
               onSwitchUser={setActiveUser}
               onResetData={handleResetData}
+              onSaveContainerUnit={handleSaveContainerUnit}
+              onDeleteContainerUnit={handleDeleteContainerUnit}
             />
           )}
         </main>

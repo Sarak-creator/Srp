@@ -1,7 +1,17 @@
 export type UserRole = 'admin' | 'cashier' | 'driver';
 export type PaymentStatus = 'paid' | 'partial' | 'unpaid';
 export type PaymentMethod = 'cash_khr' | 'cash_usd' | 'khqr' | 'credit';
-export type ContainerUnit = 'container_20l' | 'pack_350ml' | 'pack_500ml' | 'pack_1500ml' | 'bottle_custom';
+export type ContainerUnit = 'container_20l' | 'pack_350ml' | 'pack_500ml' | 'pack_1500ml' | 'bottle_custom' | (string & {});
+
+export interface ContainerUnitItem {
+  id: string;
+  code: string;
+  nameKh: string;
+  nameEn: string;
+  description?: string;
+  isDefault?: boolean;
+  createdAt?: string;
+}
 export type ExpenseCategory = 'electricity' | 'fuel' | 'salary' | 'maintenance' | 'misc';
 export type DamageReason = 'delivery_leak' | 'factory_defect' | 'loading_crack' | 'customer_return';
 

@@ -8,6 +8,7 @@ import {
   SystemSettings,
   UserAccount,
   CustomerPayment,
+  ContainerUnitItem,
 } from '@/types/water-factory';
 import { DEFAULT_EXCHANGE_RATE } from './financial-engine';
 
@@ -21,6 +22,7 @@ const STORAGE_KEYS = {
   PAYMENTS: 'srp_water_payments',
   SETTINGS: 'srp_water_settings',
   USERS: 'srp_water_users',
+  CONTAINER_UNITS: 'srp_water_container_units',
 };
 
 // Clean defaults - strictly NO demo or mock data
@@ -127,6 +129,13 @@ export const StorageService = {
   },
   saveUsers(users: UserAccount[]): void {
     setItem(STORAGE_KEYS.USERS, users);
+  },
+
+  getContainerUnits(): ContainerUnitItem[] {
+    return getItem<ContainerUnitItem[]>(STORAGE_KEYS.CONTAINER_UNITS, []);
+  },
+  saveContainerUnits(units: ContainerUnitItem[]): void {
+    setItem(STORAGE_KEYS.CONTAINER_UNITS, units);
   },
 
   /**

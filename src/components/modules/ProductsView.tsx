@@ -1,25 +1,33 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Package, Plus, Edit2, Trash2, Droplets, Tag, Layers } from 'lucide-react';
-import { Product, ContainerUnit, SystemSettings } from '@/types/water-factory';
+import { Package, Plus, Edit2, Trash2, Droplets, Tag, Layers, Boxes } from 'lucide-react';
+import { Product, ContainerUnit, ContainerUnitItem, SystemSettings } from '@/types/water-factory';
 import { formatCurrency, formatKhr, khrToUsd } from '@/lib/financial-engine';
 import { generateUuid } from '@/lib/supabase-service';
+import { ContainerUnitsModal } from './ContainerUnitsModal';
 
 interface ProductsViewProps {
   products: Product[];
   settings: SystemSettings;
+  containerUnits?: ContainerUnitItem[];
   onSaveProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
+  onSaveContainerUnit?: (unit: ContainerUnitItem) => Promise<boolean | ContainerUnitItem | null>;
+  onDeleteContainerUnit?: (id: string) => Promise<boolean>;
 }
 
 export const ProductsView: React.FC<ProductsViewProps> = ({
   products,
   settings,
+  containerUnits = [],
   onSaveProduct,
   onDeleteProduct,
+  onSaveContainerUnit,
+  onDeleteContainerUnit,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUnitsModalOpen, setIsUnitsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // Form State - Prices in Khmer Riel (៛)
@@ -36,7 +44,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     setNameKh('');
     setNameEn('');
     setProductCode(`W-${Date.now().toString().slice(-4)}`);
-    setUnit('container_20l');
+    const defaultUnit = containerUnits.find((u) => u.isDefault)?.code || containerUnits[0]?.code || 'container_20l';
+    setUnit(defaultUnit);
     setRetailPriceKhr('3000');
     setWholesalePriceKhr('2500');
     setIsRefill20l(true);
@@ -90,6 +99,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   };
 
   const getUnitLabel = (u: ContainerUnit) => {
+    const found = containerUnits.find((item) => item.code === u);
+    if (found) return found.nameKh;
     switch (u) {
       case 'container_20l':
         return 'ធុង ២០លីត្រ';
@@ -99,15 +110,17 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         return 'យួរ ៥០០មល (២៤ដប)';
       case 'pack_1500ml':
         return 'យួរ ១៥០០មល (១២ដប)';
+      case 'bottle_custom':
+        return 'ដប/កញ្ចប់ផ្សេងៗ';
       default:
-        return 'ដប/កញ្ចប់';
+        return u;
     }
   };
 
   return (
     <div className="space-y-4">
       {/* Header bar */}
-      <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+      <div className="p-4 rounded-3xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
             <Package className="w-4 h-4 text-cyan-400" />
@@ -117,13 +130,24 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             គ្រប់គ្រងតម្លៃរាយ និងតម្លៃដុំ គិតជារៀល (៛) សម្រាប់ទឹកធុង ២០L និងទឹកដបសម្រេច
           </p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 shadow-md shadow-cyan-600/30 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>បន្ថែមផលិតផលថ្មី</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onSaveContainerUnit && (
+            <button
+              onClick={() => setIsUnitsModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800/50 shadow-sm transition active:scale-95"
+            >
+              <Boxes className="w-4 h-4 text-cyan-400" />
+              <span>គ្រប់គ្រងឯកតា (Units)</span>
+            </button>
+          )}
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 shadow-md shadow-cyan-600/30 transition active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>បន្ថែមផលិតផលថ្មី</span>
+          </button>
+        </div>
       </div>
 
       {/* Products Grid */}
@@ -266,18 +290,40 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  ប្រភេទកញ្ចប់/ធុង *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-300">
+                    ប្រភេទកញ្ចប់/ធុង *
+                  </label>
+                  {onSaveContainerUnit && (
+                    <button
+                      type="button"
+                      onClick={() => setIsUnitsModalOpen(true)}
+                      className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
+                    >
+                      <Boxes className="w-3 h-3" />
+                      <span>+ គ្រប់គ្រងឯកតា</span>
+                    </button>
+                  )}
+                </div>
                 <select
                   value={unit}
-                  onChange={(e) => setUnit(e.target.value as ContainerUnit)}
+                  onChange={(e) => setUnit(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="container_20l">ធុង ២០លីត្រ (20L Container)</option>
-                  <option value="pack_350ml">យួរ ៣៥០មល (24 ដប)</option>
-                  <option value="pack_500ml">យួរ ៥០០មល (24 ដប)</option>
-                  <option value="pack_1500ml">យួរ ១៥០០មល (12 ដប)</option>
+                  {containerUnits.length > 0 ? (
+                    containerUnits.map((u) => (
+                      <option key={u.id} value={u.code}>
+                        {u.nameKh} ({u.nameEn || u.code})
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="container_20l">ធុង ២០លីត្រ (20L Container)</option>
+                      <option value="pack_350ml">យួរ ៣៥០មល (24 ដប)</option>
+                      <option value="pack_500ml">យួរ ៥០០មល (24 ដប)</option>
+                      <option value="pack_1500ml">យួរ ១៥០០មល (12 ដប)</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>
@@ -401,6 +447,21 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </div>
           </form>
         </div>
+      )}
+
+      {/* Container Units Modal */}
+      {onSaveContainerUnit && onDeleteContainerUnit && (
+        <ContainerUnitsModal
+          isOpen={isUnitsModalOpen}
+          onClose={() => setIsUnitsModalOpen(false)}
+          containerUnits={containerUnits}
+          products={products}
+          onSaveUnit={onSaveContainerUnit}
+          onDeleteUnit={onDeleteContainerUnit}
+          onSelectUnit={(newCode) => {
+            setUnit(newCode);
+          }}
+        />
       )}
     </div>
   );
