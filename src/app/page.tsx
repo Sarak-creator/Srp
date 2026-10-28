@@ -33,16 +33,17 @@ export default function AppHome() {
   const [activeModule, setActiveModule] = useState<ActiveModule>('dashboard');
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarFixed, setIsSidebarFixed] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Auto collapse sidebar when navigating to POS, expand when returning to other modules
+  // If sidebar is fixed, it stays open; if unpinned/not-fixed, auto-collapse on POS
   const handleSelectModule = (mod: ActiveModule) => {
     setActiveModule(mod);
     setIsMobileDrawerOpen(false);
-    if (mod === 'pos') {
+    if (!isSidebarFixed && mod === 'pos') {
       setIsSidebarCollapsed(true);
-    } else {
+    } else if (!isSidebarFixed && isSidebarCollapsed) {
       setIsSidebarCollapsed(false);
     }
   };
@@ -382,7 +383,7 @@ export default function AppHome() {
   const emptyBottleHoldersCount = customers.filter((c) => c.emptyContainersHeld > 0).length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
       {/* Top Header Bar */}
       <HeaderBar
         settings={settings}
@@ -392,9 +393,9 @@ export default function AppHome() {
         onToggleMobileMenu={() => setIsMobileDrawerOpen((prev) => !prev)}
       />
 
-      {/* Main Workspace with Sidebar */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Navigation Sidebar (Desktop + Mobile Slide-over Drawer) */}
+      {/* Main Workspace with Fixed Sidebar */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Navigation Sidebar (Desktop Fixed Sidebar + Mobile Slide-over Drawer) */}
         <Sidebar
           activeModule={activeModule}
           onSelectModule={handleSelectModule}
@@ -403,11 +404,24 @@ export default function AppHome() {
           isMobileOpen={isMobileDrawerOpen}
           onCloseMobile={() => setIsMobileDrawerOpen(false)}
           isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+          onToggleCollapse={() => {
+            setIsSidebarCollapsed((prev) => !prev);
+            if (!isSidebarCollapsed) {
+              setIsSidebarFixed(false);
+            }
+          }}
+          isFixed={isSidebarFixed}
+          onToggleFixed={() => {
+            setIsSidebarFixed((prev) => {
+              const next = !prev;
+              if (next) setIsSidebarCollapsed(false);
+              return next;
+            });
+          }}
         />
 
         {/* Dynamic Content Pane for the 11 Modules (responsive padding with pb-24 for mobile nav bar) */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 bg-slate-950/60 pb-24 lg:pb-6">
+        <main className="flex-1 h-full overflow-y-auto p-3 sm:p-4 lg:p-6 bg-slate-950/60 pb-24 lg:pb-6">
           {activeModule === 'dashboard' && (
             <DashboardView
               orders={orders}

@@ -17,6 +17,7 @@ import {
   Droplets,
   ChevronLeft,
   ChevronRight,
+  Pin,
 } from 'lucide-react';
 
 export type ActiveModule =
@@ -41,6 +42,8 @@ interface SidebarProps {
   onCloseMobile?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  isFixed?: boolean;
+  onToggleFixed?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -52,6 +55,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   isCollapsed = false,
   onToggleCollapse,
+  isFixed = true,
+  onToggleFixed,
 }) => {
   const menuItems = [
     {
@@ -143,13 +148,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div
           className={`p-3 flex items-center ${
             collapsed ? 'justify-center' : 'justify-between'
-          } border-b border-slate-800/60`}
+          } border-b border-slate-800/60 flex-shrink-0`}
         >
           {!collapsed ? (
             <>
-              <p className="px-2 py-1 text-[10px] uppercase font-bold tracking-wider text-slate-500 truncate">
-                ម៉ឺនុយគ្រប់គ្រង (11 MODULES)
-              </p>
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="px-2 py-1 text-[10px] uppercase font-bold tracking-wider text-slate-400 truncate">
+                  ម៉ឺនុយគ្រប់គ្រង (11)
+                </p>
+                {isFixed && !isMobile && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">
+                    <Pin className="w-2.5 h-2.5" />
+                    <span>ថេរ</span>
+                  </span>
+                )}
+              </div>
+
               {isMobile ? (
                 onCloseMobile && (
                   <button
@@ -161,16 +175,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </button>
                 )
               ) : (
-                onToggleCollapse && (
-                  <button
-                    onClick={onToggleCollapse}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                    title="បង្រួមម៉ឺនុយ (Collapse Sidebar)"
-                    aria-label="Collapse sidebar"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                )
+                <div className="flex items-center gap-1">
+                  {onToggleFixed && (
+                    <button
+                      onClick={onToggleFixed}
+                      className={`p-1.5 rounded-lg transition ${
+                        isFixed
+                          ? 'text-cyan-400 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800/50'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                      title={isFixed ? 'ម៉ឺនុយថេរ (Sidebar is Fixed)' : 'ចុចដើម្បីកំណត់ម៉ឺនុយថេរ (Pin Sidebar)'}
+                      aria-label="Toggle fixed sidebar"
+                    >
+                      <Pin className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {onToggleCollapse && (
+                    <button
+                      onClick={onToggleCollapse}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                      title="បង្រួមម៉ឺនុយ (Collapse Sidebar)"
+                      aria-label="Collapse sidebar"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               )}
             </>
           ) : (
@@ -289,7 +319,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Footer Info */}
         <div
-          className={`p-3 border-t border-slate-800 text-[10px] text-slate-500 ${
+          className={`p-3 border-t border-slate-800 text-[10px] text-slate-500 flex-shrink-0 ${
             collapsed ? 'flex justify-center' : 'text-center'
           }`}
         >
@@ -310,9 +340,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Sidebar (hidden on mobile and tablet < lg) */}
+      {/* Desktop Fixed Sidebar (hidden on mobile and tablet < lg) */}
       <aside
-        className={`hidden lg:flex flex-col flex-shrink-0 select-none bg-slate-900 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+        className={`hidden lg:flex flex-col flex-shrink-0 select-none bg-slate-900 border-r border-slate-800 transition-all duration-300 ease-in-out h-full overflow-hidden ${
           isCollapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
@@ -331,7 +361,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Drawer Content */}
           <aside className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col h-full z-10 shadow-2xl">
             {/* Mobile Header with Logo */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shrink-0">
                   <Droplets className="w-4 h-4 text-white" />
