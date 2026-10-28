@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Pin,
 } from 'lucide-react';
+import { SrpLogo } from '@/components/common/SrpLogo';
 
 export type ActiveModule =
   | 'dashboard'
@@ -362,15 +363,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <aside className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col h-full z-10 shadow-2xl">
             {/* Mobile Header with Logo */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shrink-0">
-                  <Droplets className="w-4 h-4 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-xs font-bold text-white truncate">រោងចក្រទឹកបរិសុទ្ធ SRP</h3>
-                  <p className="text-[10px] text-cyan-400 truncate">គ្រប់គ្រងម៉ឺនុយទាំងអស់</p>
-                </div>
-              </div>
+              <SrpLogo size={34} showText={true} subtitle="គ្រប់គ្រងម៉ឺនុយទាំងអស់" />
               <button
                 onClick={onCloseMobile}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"

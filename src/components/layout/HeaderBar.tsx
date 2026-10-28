@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Droplets,
   DollarSign,
   ShoppingCart,
   UserCheck,
@@ -12,6 +11,7 @@ import {
   Minimize,
 } from 'lucide-react';
 import { SystemSettings, UserAccount } from '@/types/water-factory';
+import { SrpLogo } from '@/components/common/SrpLogo';
 
 interface HeaderBarProps {
   settings: SystemSettings;
@@ -91,9 +91,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           </button>
         )}
 
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
-          <Droplets className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-        </div>
+        <SrpLogo size={40} showText={false} />
         <div className="min-w-0">
           <h1 className="text-xs sm:text-sm lg:text-base font-bold text-white tracking-wide truncate max-w-[140px] sm:max-w-[240px] md:max-w-none">
             {settings.factoryNameKh}

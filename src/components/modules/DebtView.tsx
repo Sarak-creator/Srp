@@ -240,33 +240,30 @@ export const DebtView: React.FC<DebtViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setPayMethod('cash_khr')}
-                  className={`py-1.5 px-2 rounded-xl border transition ${
-                    payMethod === 'cash_khr'
-                      ? 'bg-emerald-600 text-white border-emerald-500'
-                      : 'bg-slate-950 text-slate-400 border-slate-800'
-                  }`}
+                  className={`py-1.5 px-2 rounded-xl border transition ${payMethod === 'cash_khr'
+                    ? 'bg-emerald-600 text-white border-emerald-500'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                    }`}
                 >
                   លុយរៀល (KHR)
                 </button>
                 <button
                   type="button"
                   onClick={() => setPayMethod('cash_usd')}
-                  className={`py-1.5 px-2 rounded-xl border transition ${
-                    payMethod === 'cash_usd'
-                      ? 'bg-emerald-600 text-white border-emerald-500'
-                      : 'bg-slate-950 text-slate-400 border-slate-800'
-                  }`}
+                  className={`py-1.5 px-2 rounded-xl border transition ${payMethod === 'cash_usd'
+                    ? 'bg-emerald-600 text-white border-emerald-500'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                    }`}
                 >
                   លុយដុល្លារ ($)
                 </button>
                 <button
                   type="button"
                   onClick={() => setPayMethod('khqr')}
-                  className={`py-1.5 px-2 rounded-xl border transition ${
-                    payMethod === 'khqr'
-                      ? 'bg-cyan-600 text-white border-cyan-500'
-                      : 'bg-slate-950 text-slate-400 border-slate-800'
-                  }`}
+                  className={`py-1.5 px-2 rounded-xl border transition ${payMethod === 'khqr'
+                    ? 'bg-cyan-600 text-white border-cyan-500'
+                    : 'bg-slate-950 text-slate-400 border-slate-800'
+                    }`}
                 >
                   KHQR Scan
                 </button>
