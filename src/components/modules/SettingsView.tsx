@@ -1,9 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Settings, DollarSign, Building, Users, Receipt, Shield, RefreshCw, Boxes, Plus, Edit2, Tag } from 'lucide-react';
+import {
+  Settings,
+  DollarSign,
+  Building,
+  Users,
+  Receipt,
+  Shield,
+  RefreshCw,
+  Boxes,
+  Plus,
+  Edit2,
+  Tag,
+  Send,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+} from 'lucide-react';
 import { SystemSettings, UserAccount, UserRole, ContainerUnitItem, Product } from '@/types/water-factory';
 import { ContainerUnitsModal } from './ContainerUnitsModal';
+import { testTelegramConnection } from '@/lib/telegram-service';
 
 interface SettingsViewProps {
   settings: SystemSettings;
@@ -40,6 +59,48 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [isSavedNotice, setIsSavedNotice] = useState(false);
   const [isUnitsModalOpen, setIsUnitsModalOpen] = useState(false);
 
+  // Telegram Bot State
+  const [telegramBotToken, setTelegramBotToken] = useState(settings.telegramBotToken || '');
+  const [telegramChatId, setTelegramChatId] = useState(settings.telegramChatId || '');
+  const [telegramNotifyOrder, setTelegramNotifyOrder] = useState(settings.telegramNotifyOrder ?? true);
+  const [telegramNotifyDebt, setTelegramNotifyDebt] = useState(settings.telegramNotifyDebt ?? true);
+  const [telegramNotifyClosing, setTelegramNotifyClosing] = useState(settings.telegramNotifyClosing ?? true);
+  const [telegramNotifyBroken, setTelegramNotifyBroken] = useState(settings.telegramNotifyBroken ?? false);
+  const [showToken, setShowToken] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [testMsg, setTestMsg] = useState('');
+
+  const handleTestBot = async () => {
+    if (!telegramBotToken.trim()) {
+      setTestStatus('error');
+      setTestMsg('សូមបញ្ចូល Bot Token ជាមុនសិន!');
+      return;
+    }
+    if (!telegramChatId.trim()) {
+      setTestStatus('error');
+      setTestMsg('សូមបញ្ចូល Chat ID ឬ Group ID ជាមុនសិន!');
+      return;
+    }
+
+    setTestStatus('loading');
+    setTestMsg('កំពុងសាកល្បងផ្ញើសារតេស្តទៅ Telegram...');
+
+    const result = await testTelegramConnection(
+      telegramBotToken,
+      telegramChatId,
+      factoryNameKh || 'សហគ្រាសផលិតទឹកបរិសុទ្ធ អេស អរ ភី'
+    );
+
+    if (result.success) {
+      setTestStatus('success');
+      setTestMsg(result.message);
+    } else {
+      setTestStatus('error');
+      setTestMsg(result.message);
+    }
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const rate = parseFloat(exchangeRate) || 4100;
@@ -52,6 +113,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       addressKh: addressKh.trim(),
       exchangeRateKhrPerUsd: rate,
       receiptFooterKh: receiptFooterKh.trim(),
+      telegramBotToken: telegramBotToken.trim(),
+      telegramChatId: telegramChatId.trim(),
+      telegramNotifyOrder,
+      telegramNotifyDebt,
+      telegramNotifyClosing,
+      telegramNotifyBroken,
     };
 
     onSaveSettings(newSettings);
@@ -182,6 +249,211 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               onChange={(e) => setReceiptFooterKh(e.target.value)}
               className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
             />
+          </div>
+        </div>
+
+        {/* Telegram Bot Integration Section */}
+        <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center">
+                  <Send className="w-4 h-4" />
+                </div>
+                <h3 className="text-xs font-bold text-white">
+                  ការភ្ជាប់ Telegram Bot សម្រាប់ទទួលដំណឹង (Telegram Bot Notifications)
+                </h3>
+                {telegramBotToken && telegramChatId ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                    ● កំពុងដំណើរការ
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-medium">
+                    ○ មិនទាន់ភ្ជាប់
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                ទទួលសារដំណឹងភ្លាមៗរាល់ពេលមានការលក់ថ្មី ការសងប្រាក់បំណុល និងរបាយការណ៍បិទបញ្ជីប្រចាំថ្ងៃ
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowGuide(!showGuide)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 transition shrink-0"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>{showGuide ? 'លាក់ការណែនាំ' : 'របៀបបង្កើត Bot'}</span>
+            </button>
+          </div>
+
+          {/* Setup Guide Accordion */}
+          {showGuide && (
+            <div className="p-4 rounded-2xl bg-slate-950 border border-sky-500/30 text-xs text-slate-300 space-y-2.5">
+              <h4 className="font-bold text-sky-400 flex items-center gap-1.5 text-xs">
+                📖 របៀបបង្កើត Telegram Bot និងយក Chat ID៖
+              </h4>
+              <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-300">
+                <li>
+                  បើក Telegram ស្វែងរក <b className="text-white">@BotFather</b> រួចផ្ញើពាក្យ <code className="text-sky-400 font-mono">/newbot</code>
+                </li>
+                <li>
+                  កំណត់ឈ្មោះ Bot និង Username (ត្រូវបញ្ចប់ដោយពាក្យ <b>bot</b> ឧទាហរណ៍៖ <code className="text-sky-300 font-mono">srppos_bot</code>)
+                </li>
+                <li>
+                  Copy យក <b className="text-amber-400">HTTP API Token</b> (ឧទាហរណ៍៖ <code className="text-amber-300 font-mono">7123456789:AAHk...</code>) មកបិទភ្ជាប់ក្នុងប្រអប់ <b>Bot Token</b>
+                </li>
+                <li>
+                  <b>របៀបយក Chat ID៖</b>
+                  <div className="pl-4 mt-1 space-y-0.5 text-slate-400">
+                    <div>• <b>ទទួលផ្ទាល់ខ្លួន៖</b> ឆាតទៅ <b className="text-white">@userinfobot</b> ឬ <b className="text-white">@getmyid_bot</b> រួចចុច <code className="text-sky-400 font-mono">/start</code> ដើម្បីមើល <code>Id</code> របស់អ្នក (ជាលេខសុទ្ធ)</div>
+                    <div>• <b>ទទួលក្នុង Telegram Group៖</b> Add Bot ដែលទើបបង្កើតចូលក្នុង Group របស់អ្នក រួចយក Chat ID (ជាទូទៅចាប់ផ្ដើមដោយសញ្ញាដក <code className="text-sky-400 font-mono">-100...</code>)</div>
+                  </div>
+                </li>
+                <li>
+                  ចុចប៊ូតុង <b className="text-emerald-400">សាកល្បងផ្ញើសារតេស្ត</b> ដើម្បីផ្ទៀងផ្ទាត់!
+                </li>
+              </ol>
+            </div>
+          )}
+
+          {/* Bot Token & Chat ID Inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                Telegram Bot Token (@BotFather Token)
+              </label>
+              <div className="relative">
+                <input
+                  type={showToken ? 'text' : 'password'}
+                  value={telegramBotToken}
+                  onChange={(e) => setTelegramBotToken(e.target.value)}
+                  placeholder="7123456789:AAHk1_exampleToken..."
+                  className="w-full px-3 py-2 pr-10 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-sky-500 font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken(!showToken)}
+                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white transition"
+                  tabIndex={-1}
+                >
+                  {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                Telegram Chat ID ឬ Group ID
+              </label>
+              <input
+                type="text"
+                value={telegramChatId}
+                onChange={(e) => setTelegramChatId(e.target.value)}
+                placeholder="123456789 ឬ -1001234567890"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-sky-500 font-mono"
+              />
+            </div>
+          </div>
+
+          {/* Notification Toggles */}
+          <div className="pt-2 border-t border-slate-800">
+            <p className="text-xs font-bold text-slate-300 mb-2.5">
+              ជ្រើសរើសប្រភេទដំណឹងដែលត្រូវផ្ញើស្វ័យប្រវត្តិ (Notification Events):
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 cursor-pointer transition">
+                <input
+                  type="checkbox"
+                  checked={telegramNotifyOrder}
+                  onChange={(e) => setTelegramNotifyOrder(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <div>
+                  <div className="text-xs font-semibold text-white">🔔 ការលក់ថ្មី (POS New Sale)</div>
+                  <div className="text-[10px] text-slate-400">ផ្ញើដំណឹងភ្លាមៗពេលចេញវិក្កយបត្រថ្មី</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 cursor-pointer transition">
+                <input
+                  type="checkbox"
+                  checked={telegramNotifyDebt}
+                  onChange={(e) => setTelegramNotifyDebt(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <div>
+                  <div className="text-xs font-semibold text-white">💰 ការទូទាត់បំណុល (Debt Repayments)</div>
+                  <div className="text-[10px] text-slate-400">ផ្ញើដំណឹងពេលអតិថិជនសងប្រាក់បំណុល</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 cursor-pointer transition">
+                <input
+                  type="checkbox"
+                  checked={telegramNotifyClosing}
+                  onChange={(e) => setTelegramNotifyClosing(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <div>
+                  <div className="text-xs font-semibold text-white">📊 របាយការណ៍បិទបញ្ជី (Daily Report Summary)</div>
+                  <div className="text-[10px] text-slate-400">ផ្ញើរបាយការណ៍សង្ខេបលក់ប្រចាំថ្ងៃ</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 cursor-pointer transition">
+                <input
+                  type="checkbox"
+                  checked={telegramNotifyBroken}
+                  onChange={(e) => setTelegramNotifyBroken(e.target.checked)}
+                  className="w-4 h-4 rounded text-sky-600 focus:ring-0 bg-slate-900 border-slate-700"
+                />
+                <div>
+                  <div className="text-xs font-semibold text-white">⚠️ ទំនិញបាក់បែក / ខូចខាត (Damages)</div>
+                  <div className="text-[10px] text-slate-400">ផ្ញើដំណឹងពេលកត់ត្រាសំបកធុង/ទំនិញបែក</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Test Connection Button & Status */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800">
+            <div className="text-xs">
+              {testStatus === 'loading' && (
+                <span className="text-sky-400 flex items-center gap-1.5 animate-pulse">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  {testMsg}
+                </span>
+              )}
+              {testStatus === 'success' && (
+                <span className="text-emerald-400 flex items-center gap-1.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {testMsg}
+                </span>
+              )}
+              {testStatus === 'error' && (
+                <span className="text-rose-400 flex items-center gap-1.5 font-bold">
+                  <AlertCircle className="w-4 h-4" />
+                  {testMsg}
+                </span>
+              )}
+              {testStatus === 'idle' && (
+                <span className="text-[11px] text-slate-500">
+                  ចុច "សាកល្បងផ្ញើសារតេស្ត" ដើម្បីពិនិត្យមើលថាតើសារអាចចូល Telegram បានឬនៅ
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleTestBot}
+              disabled={testStatus === 'loading'}
+              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-sky-300 bg-sky-950/60 hover:bg-sky-900/80 border border-sky-700/50 transition active:scale-95 disabled:opacity-50 shrink-0"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>{testStatus === 'loading' ? 'កំពុងផ្ញើ...' : 'សាកល្បងផ្ញើសារតេស្ត (Test Bot)'}</span>
+            </button>
           </div>
         </div>
 

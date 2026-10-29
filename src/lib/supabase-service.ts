@@ -1010,6 +1010,12 @@ export const SupabaseService = {
         receiptFooterKh: data.receipt_footer_kh || 'សូមអរគុណ! សូមពិនិត្យទំនិញ និងចំនួនសំបកធុងមុនពេលទទួល។',
         enableKhqr: true,
         khqrMerchantName: data.factory_name_en || 'SRP PURIFIED WATER FACTORY',
+        telegramBotToken: data.telegram_bot_token || '',
+        telegramChatId: data.telegram_chat_id || '',
+        telegramNotifyOrder: data.telegram_notify_order ?? true,
+        telegramNotifyDebt: data.telegram_notify_debt ?? true,
+        telegramNotifyClosing: data.telegram_notify_closing ?? true,
+        telegramNotifyBroken: data.telegram_notify_broken ?? false,
       };
     } catch (e) {
       console.error('Unexpected error fetching settings:', e);
@@ -1026,28 +1032,65 @@ export const SupabaseService = {
         .limit(1)
         .maybeSingle();
 
-      const payload = {
+      const fullPayload: Record<string, any> = {
         factory_name_kh: settings.factoryNameKh,
         factory_name_en: settings.factoryNameEn,
         phone_number: settings.phoneNumber,
         address_kh: settings.addressKh,
         exchange_rate_khr_per_usd: settings.exchangeRateKhrPerUsd,
         receipt_footer_kh: settings.receiptFooterKh,
+        telegram_bot_token: settings.telegramBotToken || null,
+        telegram_chat_id: settings.telegramChatId || null,
+        telegram_notify_order: settings.telegramNotifyOrder ?? true,
+        telegram_notify_debt: settings.telegramNotifyDebt ?? true,
+        telegram_notify_closing: settings.telegramNotifyClosing ?? true,
+        telegram_notify_broken: settings.telegramNotifyBroken ?? false,
         updated_at: new Date().toISOString(),
       };
+
+      let saveError = null;
 
       if (existing?.id) {
         const { error } = await supabase
           .from('system_settings')
-          .update(payload)
+          .update(fullPayload)
           .eq('id', existing.id);
-        return !error;
+        saveError = error;
       } else {
         const { error } = await supabase
           .from('system_settings')
-          .insert({ id: generateUuid(), ...payload });
-        return !error;
+          .insert({ id: generateUuid(), ...fullPayload });
+        saveError = error;
       }
+
+      // If columns do not exist yet in Supabase schema, fall back to basic columns
+      if (saveError && (saveError.message?.includes('column') || saveError.code === '42703')) {
+        console.warn('Telegram columns not yet present in Supabase table, saving base settings:', saveError.message);
+        const basePayload = {
+          factory_name_kh: settings.factoryNameKh,
+          factory_name_en: settings.factoryNameEn,
+          phone_number: settings.phoneNumber,
+          address_kh: settings.addressKh,
+          exchange_rate_khr_per_usd: settings.exchangeRateKhrPerUsd,
+          receipt_footer_kh: settings.receiptFooterKh,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (existing?.id) {
+          const { error } = await supabase
+            .from('system_settings')
+            .update(basePayload)
+            .eq('id', existing.id);
+          return !error;
+        } else {
+          const { error } = await supabase
+            .from('system_settings')
+            .insert({ id: generateUuid(), ...basePayload });
+          return !error;
+        }
+      }
+
+      return !saveError;
     } catch (e) {
       console.error('Unexpected error saving settings:', e);
       return false;

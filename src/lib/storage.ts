@@ -35,6 +35,12 @@ export const DEFAULT_CLEAN_SETTINGS: SystemSettings = {
   receiptFooterKh: 'សូមអរគុណ! សូមពិនិត្យទំនិញ និងចំនួនសំបកធុងមុនពេលទទួល។',
   enableKhqr: true,
   khqrMerchantName: 'SRP PURIFIED WATER FACTORY',
+  telegramBotToken: '',
+  telegramChatId: '',
+  telegramNotifyOrder: true,
+  telegramNotifyDebt: true,
+  telegramNotifyClosing: true,
+  telegramNotifyBroken: false,
 };
 
 export const DEFAULT_CLEAN_USER: UserAccount = {

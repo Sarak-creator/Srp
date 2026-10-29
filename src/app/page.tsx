@@ -29,6 +29,12 @@ import { ExpensesView } from '@/components/modules/ExpensesView';
 import { SuppliersView } from '@/components/modules/SuppliersView';
 import { ReportsView } from '@/components/modules/ReportsView';
 import { SettingsView } from '@/components/modules/SettingsView';
+import {
+  sendTelegramNotification,
+  buildOrderTelegramMessage,
+  buildDebtPaymentTelegramMessage,
+  buildBrokenProductTelegramMessage,
+} from '@/lib/telegram-service';
 
 export default function AppHome() {
   const [activeModule, setActiveModule] = useState<ActiveModule>('dashboard');
@@ -151,6 +157,14 @@ export default function AppHome() {
 
     // Persist to Supabase Cloud Database
     await SupabaseService.createOrder(newOrder, activeUser.id);
+
+    // Send Telegram Notification (if configured & enabled)
+    if (settings.telegramBotToken && settings.telegramChatId && settings.telegramNotifyOrder !== false) {
+      const msg = buildOrderTelegramMessage(newOrder, settings);
+      sendTelegramNotification(settings, msg).catch((err) => {
+        console.warn('Telegram Order Notification error:', err);
+      });
+    }
   };
 
   const handleCancelOrder = async (orderId: string) => {
@@ -305,6 +319,14 @@ export default function AppHome() {
     setBrokenProducts(updated);
     StorageService.saveBrokenProducts(updated);
     await SupabaseService.addBrokenProduct(record, activeUser.id);
+
+    // Send Telegram Notification (if configured & enabled)
+    if (settings.telegramBotToken && settings.telegramChatId && settings.telegramNotifyBroken) {
+      const msg = buildBrokenProductTelegramMessage(record, settings);
+      sendTelegramNotification(settings, msg).catch((err) => {
+        console.warn('Telegram Broken Product Notification error:', err);
+      });
+    }
   };
 
   const handleDeleteBroken = async (id: string) => {
@@ -360,10 +382,12 @@ export default function AppHome() {
 
     // Deduct debt from customer locally
     const cust = customers.find((c) => c.id === payment.customerId);
+    let remainingDebt = 0;
     if (cust) {
+      remainingDebt = Math.max(0, Number((cust.totalDebtUsd - payment.equivalentUsd).toFixed(2)));
       const updatedCust: Customer = {
         ...cust,
-        totalDebtUsd: Math.max(0, Number((cust.totalDebtUsd - payment.equivalentUsd).toFixed(2))),
+        totalDebtUsd: remainingDebt,
       };
       const updatedCustomers = customers.map((c) => (c.id === cust.id ? updatedCust : c));
       setCustomers(updatedCustomers);
@@ -372,6 +396,14 @@ export default function AppHome() {
 
     // Persist to Supabase
     await SupabaseService.recordPayment(payment, activeUser.id);
+
+    // Send Telegram Notification (if configured & enabled)
+    if (settings.telegramBotToken && settings.telegramChatId && settings.telegramNotifyDebt !== false) {
+      const msg = buildDebtPaymentTelegramMessage(payment, remainingDebt, settings);
+      sendTelegramNotification(settings, msg).catch((err) => {
+        console.warn('Telegram Payment Notification error:', err);
+      });
+    }
   };
 
   const handleDeletePayment = async (paymentId: string) => {

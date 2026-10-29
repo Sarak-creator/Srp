@@ -159,6 +159,13 @@ export interface SystemSettings {
   receiptFooterKh: string;
   enableKhqr: boolean;
   khqrMerchantName: string;
+  // Telegram Bot integration
+  telegramBotToken?: string;
+  telegramChatId?: string;
+  telegramNotifyOrder?: boolean;
+  telegramNotifyDebt?: boolean;
+  telegramNotifyClosing?: boolean;
+  telegramNotifyBroken?: boolean;
 }
 
 export interface UserAccount {

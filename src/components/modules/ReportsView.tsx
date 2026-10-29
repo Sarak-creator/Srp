@@ -12,6 +12,9 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Printer,
+  Send,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 import {
   Order,
@@ -25,6 +28,10 @@ import {
   formatUsd,
   formatKhr,
 } from '@/lib/financial-engine';
+import {
+  sendTelegramNotification,
+  buildDailyClosingTelegramMessage,
+} from '@/lib/telegram-service';
 
 interface ReportsViewProps {
   orders: Order[];
@@ -61,6 +68,72 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     .filter((c) => c.totalDebtUsd > 0)
     .sort((a, b) => b.totalDebtUsd - a.totalDebtUsd);
 
+  // Telegram Summary Sender
+  const [telegramStatus, setTelegramStatus] = useState<{
+    loading: boolean;
+    message: string | null;
+    isError?: boolean;
+  }>({ loading: false, message: null });
+
+  const handleSendTelegramSummary = async () => {
+    if (!settings.telegramBotToken || !settings.telegramChatId) {
+      setTelegramStatus({
+        loading: false,
+        message: 'សូមកំណត់ Bot Token និង Chat ID ក្នុងទំព័រ Settings ជាមុនសិន!',
+        isError: true,
+      });
+      setTimeout(() => setTelegramStatus({ loading: false, message: null }), 4000);
+      return;
+    }
+
+    setTelegramStatus({ loading: true, message: 'កំពុងផ្ញើ...' });
+
+    const activeOrders = orders.filter((o) => o.status !== 'cancelled');
+    const cashUsd = activeOrders
+      .filter((o) => o.paymentMethod === 'cash_khr' || o.paymentMethod === 'cash_usd')
+      .reduce((sum, o) => sum + o.paidAmountUsd, 0);
+    const khqrUsd = activeOrders
+      .filter((o) => o.paymentMethod === 'khqr')
+      .reduce((sum, o) => sum + o.paidAmountUsd, 0);
+    const debtUsd = activeOrders.reduce((sum, o) => sum + o.remainingDebtUsd, 0);
+    const containersDelivered = activeOrders.reduce((sum, o) => sum + (o.containersDelivered20L || 0), 0);
+    const containersReturned = activeOrders.reduce((sum, o) => sum + (o.containersReturned20L || 0), 0);
+
+    const summaryPayload = {
+      totalOrders: activeOrders.length,
+      totalRevenueUsd: financial.totalGrossSalesUsd,
+      totalRevenueKhr: financial.totalGrossSalesKhr,
+      cashUsd,
+      khqrUsd,
+      debtUsd,
+      containersDelivered,
+      containersReturned,
+      expensesUsd: financial.totalOperationalExpensesUsd,
+      netProfitUsd: financial.netProfitUsd,
+    };
+
+    const message = buildDailyClosingTelegramMessage(summaryPayload, settings);
+    const res = await sendTelegramNotification(settings, message);
+
+    if (res.success) {
+      setTelegramStatus({
+        loading: false,
+        message: '✓ បានផ្ញើរបាយការណ៍ទៅ Telegram រួចរាល់!',
+        isError: false,
+      });
+    } else {
+      setTelegramStatus({
+        loading: false,
+        message: '✗ ' + (res.error || 'បរាជ័យក្នុងការផ្ញើ'),
+        isError: true,
+      });
+    }
+
+    setTimeout(() => {
+      setTelegramStatus({ loading: false, message: null });
+    }, 4500);
+  };
+
   return (
     <div className="space-y-6">
       {/* Report Header Bar */}
@@ -75,34 +148,64 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 text-xs font-semibold">
+        {/* Tab Switcher & Actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Message */}
+          {telegramStatus.message && (
+            <span
+              className={`text-xs px-3 py-1.5 rounded-xl border font-bold animate-fade-in ${
+                telegramStatus.isError
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+              }`}
+            >
+              {telegramStatus.message}
+            </span>
+          )}
+
+          {/* Telegram Send Button */}
           <button
-            onClick={() => setActiveTab('pnl')}
-            className={`px-3 py-1.5 rounded-xl transition ${
-              activeTab === 'pnl' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={handleSendTelegramSummary}
+            disabled={telegramStatus.loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-xs font-bold text-sky-300 bg-sky-950/60 hover:bg-sky-900/80 border border-sky-700/50 shadow-sm transition active:scale-95 disabled:opacity-50"
+            title="ផ្ញើរបាយការណ៍សង្ខេបទៅកាន់ Telegram"
           >
-            ចំណេញ/ខាត (P&L)
+            {telegramStatus.loading ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5 text-sky-400" />
+            )}
+            <span>ផ្ញើទៅ Telegram</span>
           </button>
-          <button
-            onClick={() => setActiveTab('bottles')}
-            className={`px-3 py-1.5 rounded-xl transition ${
-              activeTab === 'bottles'
-                ? 'bg-cyan-600 text-white shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            សំបកធុង ២០L
-          </button>
-          <button
-            onClick={() => setActiveTab('debt')}
-            className={`px-3 py-1.5 rounded-xl transition ${
-              activeTab === 'debt' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            បំណុលជំពាក់
-          </button>
+
+          <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 text-xs font-semibold">
+            <button
+              onClick={() => setActiveTab('pnl')}
+              className={`px-3 py-1.5 rounded-xl transition ${
+                activeTab === 'pnl' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              ចំណេញ/ខាត (P&L)
+            </button>
+            <button
+              onClick={() => setActiveTab('bottles')}
+              className={`px-3 py-1.5 rounded-xl transition ${
+                activeTab === 'bottles'
+                  ? 'bg-cyan-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              សំបកធុង ២០L
+            </button>
+            <button
+              onClick={() => setActiveTab('debt')}
+              className={`px-3 py-1.5 rounded-xl transition ${
+                activeTab === 'debt' ? 'bg-cyan-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              បំណុលជំពាក់
+            </button>
+          </div>
         </div>
       </div>
 
