@@ -12,7 +12,7 @@ import {
   CustomerPayment,
   ContainerUnitItem,
 } from '@/types/water-factory';
-import { DEFAULT_EXCHANGE_RATE } from './financial-engine';
+import { DEFAULT_EXCHANGE_RATE, usdToKhr } from './financial-engine';
 
 export function isUuid(str?: string): boolean {
   if (!str) return false;
@@ -412,6 +412,8 @@ export const SupabaseService = {
           exchangeRate: Number(row.exchange_rate_applied || DEFAULT_EXCHANGE_RATE),
           subtotalUsd: Number(row.subtotal_usd || 0),
           discountUsd: Number(row.discount_usd || 0),
+          discountKhr: usdToKhr(Number(row.discount_usd || 0), Number(row.exchange_rate_applied || DEFAULT_EXCHANGE_RATE)),
+          discountType: Number(row.grand_total_usd || 0) === 0 && Number(row.discount_usd || 0) > 0 ? 'free' : undefined,
           grandTotalUsd: Number(row.grand_total_usd || 0),
           grandTotalKhr: Number(row.grand_total_khr || 0),
           paidAmountUsd: Number(row.paid_amount_usd || 0),

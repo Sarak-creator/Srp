@@ -116,6 +116,16 @@ export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({
                       <td className="py-3 px-4 text-right">
                         <p className="font-bold text-white">{formatUsd(order.grandTotalUsd)}</p>
                         <p className="text-[10px] text-slate-400">{formatKhr(order.grandTotalKhr)}</p>
+                        {order.discountType === 'free' || order.grandTotalUsd === 0 ? (
+                          <span className="inline-block mt-0.5 px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            ឥតគិតថ្លៃ
+                          </span>
+                        ) : order.discountUsd > 0 ? (
+                          <span className="inline-block mt-0.5 text-[9px] text-rose-400 font-medium">
+                            ចុះ: -${order.discountUsd.toFixed(2)}
+                            {order.discountKhr ? ` (${formatKhr(order.discountKhr)})` : ''}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span

@@ -19,6 +19,10 @@ import {
   Package,
   Check,
   Barcode,
+  Tag,
+  Percent,
+  Coins,
+  Gift,
 } from 'lucide-react';
 import {
   Product,
@@ -30,6 +34,7 @@ import {
   SystemSettings,
   UserAccount,
   ContainerUnitItem,
+  DiscountType,
 } from '@/types/water-factory';
 import { generateUuid } from '@/lib/supabase-service';
 import {
@@ -75,7 +80,8 @@ export const PosView: React.FC<PosViewProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash_khr');
   const [paidInputUsd, setPaidInputUsd] = useState<string>('');
   const [paidInputKhr, setPaidInputKhr] = useState<string>('');
-  const [discountUsd, setDiscountUsd] = useState<string>('0');
+  const [discountMode, setDiscountMode] = useState<DiscountType>('none');
+  const [discountInputValue, setDiscountInputValue] = useState<string>('');
   const [orderNotes, setOrderNotes] = useState('');
   const [posMobileTab, setPosMobileTab] = useState<'catalog' | 'cart'>('catalog');
   const [priceMode, setPriceMode] = useState<'retail' | 'wholesale'>('retail');
@@ -99,10 +105,34 @@ export const PosView: React.FC<PosViewProps> = ({
 
   // Cart Calculations
   const subtotalUsd = cart.reduce((sum, item) => sum + item.totalUsd, 0);
+  const subtotalKhr = usdToKhr(subtotalUsd, settings.exchangeRateKhrPerUsd);
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const numDiscount = parseFloat(discountUsd) || 0;
-  const grandTotalUsd = Math.max(0, Number((subtotalUsd - numDiscount).toFixed(2)));
-  const grandTotalKhr = usdToKhr(grandTotalUsd, settings.exchangeRateKhrPerUsd);
+
+  // Effective Discount Calculation (ជា %, ជារៀល ៛, ឥតគិតថ្លៃ Free)
+  let effectiveDiscountUsd = 0;
+  let effectiveDiscountKhr = 0;
+  let discountDisplayValue = 0;
+
+  if (subtotalUsd > 0) {
+    if (discountMode === 'free') {
+      effectiveDiscountUsd = subtotalUsd;
+      effectiveDiscountKhr = subtotalKhr;
+      discountDisplayValue = 100;
+    } else if (discountMode === 'percent') {
+      const pct = Math.min(100, Math.max(0, parseFloat(discountInputValue) || 0));
+      discountDisplayValue = pct;
+      effectiveDiscountUsd = Number(((subtotalUsd * pct) / 100).toFixed(2));
+      effectiveDiscountKhr = Math.round((subtotalKhr * pct) / 100);
+    } else if (discountMode === 'khr') {
+      const khrVal = Math.max(0, parseFloat(discountInputValue) || 0);
+      discountDisplayValue = khrVal;
+      effectiveDiscountKhr = Math.min(subtotalKhr, khrVal);
+      effectiveDiscountUsd = Number((effectiveDiscountKhr / settings.exchangeRateKhrPerUsd).toFixed(2));
+    }
+  }
+
+  const grandTotalUsd = Math.max(0, Number((subtotalUsd - effectiveDiscountUsd).toFixed(2)));
+  const grandTotalKhr = Math.max(0, subtotalKhr - effectiveDiscountKhr);
 
   const getUnitLabel = (u: string) => {
     const found = containerUnits.find((item) => item.code === u);
@@ -214,7 +244,8 @@ export const PosView: React.FC<PosViewProps> = ({
   // Clear Cart
   const handleClearCart = () => {
     setCart([]);
-    setDiscountUsd('0');
+    setDiscountMode('none');
+    setDiscountInputValue('');
     setPaidInputUsd('');
     setPaidInputKhr('');
     setContainersDelivered20L(0);
@@ -254,7 +285,10 @@ export const PosView: React.FC<PosViewProps> = ({
     let paidUsd = 0;
     let paidKhr = 0;
 
-    if (paymentMethod === 'credit') {
+    if (grandTotalUsd === 0) {
+      paidUsd = 0;
+      paidKhr = 0;
+    } else if (paymentMethod === 'credit') {
       paidUsd = 0;
       paidKhr = 0;
     } else if (paymentMethod === 'cash_usd') {
@@ -266,7 +300,7 @@ export const PosView: React.FC<PosViewProps> = ({
     }
 
     const totalPaidInUsdEquivalent = paidUsd + (paidKhr > 0 ? paidKhr / settings.exchangeRateKhrPerUsd : 0);
-    const remainingDebtUsd = Math.max(0, Number((grandTotalUsd - totalPaidInUsdEquivalent).toFixed(2)));
+    const remainingDebtUsd = grandTotalUsd === 0 ? 0 : Math.max(0, Number((grandTotalUsd - totalPaidInUsdEquivalent).toFixed(2)));
 
     let paymentStatus: PaymentStatus = 'paid';
     if (remainingDebtUsd > 0) {
@@ -286,7 +320,10 @@ export const PosView: React.FC<PosViewProps> = ({
       paymentMethod,
       exchangeRate: settings.exchangeRateKhrPerUsd,
       subtotalUsd,
-      discountUsd: numDiscount,
+      discountUsd: effectiveDiscountUsd,
+      discountKhr: effectiveDiscountKhr,
+      discountType: discountMode !== 'none' ? discountMode : undefined,
+      discountValue: discountDisplayValue,
       grandTotalUsd,
       grandTotalKhr,
       paidAmountUsd: paidUsd,
@@ -295,7 +332,9 @@ export const PosView: React.FC<PosViewProps> = ({
       containersDelivered20L,
       containersReturned20L,
       items: cart.map(({ product, ...item }) => item),
-      notes: orderNotes.trim() || undefined,
+      notes: discountMode === 'free'
+        ? (orderNotes.trim() ? `${orderNotes.trim()} [ឥតគិតថ្លៃ]` : 'ឥតគិតថ្លៃ (Free of Charge)')
+        : (orderNotes.trim() || undefined),
     };
 
     // Customer empty balance difference
@@ -694,51 +733,260 @@ export const PosView: React.FC<PosViewProps> = ({
             </div>
           </div>
 
-          {/* Payment & Totals Section */}
-          <div className="pt-2 border-t border-slate-800 space-y-2">
-            {/* Payment Method Selector (2 cols on small mobile, 4 cols on tablet & desktop) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] font-semibold">
+          {/* Discount Section (ជា %, ជារៀល, ឥតគិតថ្លៃ) */}
+          <div className="p-3 my-2 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-bold text-slate-200">
+                <Tag className="w-3.5 h-3.5 text-cyan-400" />
+                <span>បញ្ចុះតម្លៃ (Discount)</span>
+                {discountMode !== 'none' && (
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    {discountMode === 'percent' && `${discountInputValue || 0}%`}
+                    {discountMode === 'khr' && `${formatCurrency(parseFloat(discountInputValue) || 0, 'KHR')}`}
+                    {discountMode === 'free' && 'ឥតគិតថ្លៃ 100%'}
+                  </span>
+                )}
+              </div>
+
+              {discountMode !== 'none' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDiscountMode('none');
+                    setDiscountInputValue('');
+                  }}
+                  className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-0.5 hover:underline"
+                >
+                  <RotateCcw className="w-2.5 h-2.5" />
+                  <span>លុបចោល</span>
+                </button>
+              )}
+            </div>
+
+            {/* 3 Segmented Mode Tabs: % | ៛ (រៀល) | 🎁 ឥតគិតថ្លៃ */}
+            <div className="grid grid-cols-3 gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 text-[11px] font-bold">
               <button
                 type="button"
-                onClick={() => setPaymentMethod('cash_khr')}
-                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'cash_khr'
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-                  }`}
+                onClick={() => {
+                  setDiscountMode('percent');
+                  if (!discountInputValue || discountMode === 'khr') setDiscountInputValue('10');
+                }}
+                className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                  discountMode === 'percent'
+                    ? 'bg-cyan-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                លុយរៀល (KHR)
+                <Percent className="w-3 h-3" />
+                <span>ជាភាគរយ (%)</span>
               </button>
+
               <button
                 type="button"
-                onClick={() => setPaymentMethod('cash_usd')}
-                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'cash_usd'
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-                  }`}
+                onClick={() => {
+                  setDiscountMode('khr');
+                  if (!discountInputValue || discountMode === 'percent') setDiscountInputValue('1000');
+                }}
+                className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                  discountMode === 'khr'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                លុយដុល្លារ ($)
+                <Coins className="w-3 h-3" />
+                <span>ជារៀល (៛)</span>
               </button>
+
               <button
                 type="button"
-                onClick={() => setPaymentMethod('khqr')}
-                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'khqr'
-                    ? 'bg-cyan-600 text-white border-cyan-500 shadow-sm font-bold'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-                  }`}
+                onClick={() => {
+                  setDiscountMode('free');
+                  setDiscountInputValue('100');
+                }}
+                className={`py-1.5 rounded-lg transition flex items-center justify-center gap-1 ${
+                  discountMode === 'free'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm font-extrabold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                KHQR Scan
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('credit')}
-                className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'credit'
-                    ? 'bg-rose-600 text-white border-rose-500 shadow-sm font-bold'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
-                  }`}
-              >
-                ជំពាក់ (Credit)
+                <Gift className="w-3 h-3" />
+                <span>ឥតគិតថ្លៃ</span>
               </button>
             </div>
+
+            {/* Mode 1: PERCENT */}
+            {discountMode === 'percent' && (
+              <div className="space-y-2 animate-in fade-in duration-150">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={discountInputValue}
+                      onChange={(e) => setDiscountInputValue(e.target.value)}
+                      placeholder="បញ្ចូលភាគរយ..."
+                      className="w-full pl-3 pr-7 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-mono font-bold focus:border-cyan-500 focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-1.5 text-xs text-slate-400 font-bold">%</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-400 block">បញ្ចុះបាន:</span>
+                    <span className="text-xs font-mono font-bold text-rose-400">
+                      -{formatUsd(effectiveDiscountUsd)} ({formatKhr(effectiveDiscountKhr)})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick % preset buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[5, 10, 15, 20, 50].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => setDiscountInputValue(String(pct))}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition ${
+                        discountInputValue === String(pct)
+                          ? 'bg-cyan-500 text-slate-950 border-cyan-400'
+                          : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                      }`}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mode 2: KHR (ជារៀល) */}
+            {discountMode === 'khr' && (
+              <div className="space-y-2 animate-in fade-in duration-150">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={discountInputValue}
+                      onChange={(e) => setDiscountInputValue(e.target.value)}
+                      placeholder="បញ្ចូលចំនួនប្រាក់រៀល..."
+                      className="w-full pl-3 pr-7 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-mono font-bold focus:border-emerald-500 focus:outline-none"
+                    />
+                    <span className="absolute right-3 top-1.5 text-xs text-slate-400 font-bold">៛</span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-400 block">បញ្ចុះបាន:</span>
+                    <span className="text-xs font-mono font-bold text-rose-400">
+                      -{formatKhr(effectiveDiscountKhr)} (≈ {formatUsd(effectiveDiscountUsd)})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick KHR preset buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[500, 1000, 2000, 5000, 10000].map((khrVal) => (
+                    <button
+                      key={khrVal}
+                      type="button"
+                      onClick={() => setDiscountInputValue(String(khrVal))}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition ${
+                        discountInputValue === String(khrVal)
+                          ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                          : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                      }`}
+                    >
+                      {khrVal.toLocaleString()} ៛
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mode 3: FREE (ឥតគិតថ្លៃ) */}
+            {discountMode === 'free' && (
+              <div className="p-2.5 rounded-xl bg-purple-950/40 border border-purple-700/50 flex items-center justify-between text-xs animate-in fade-in duration-150">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎉</span>
+                  <div>
+                    <p className="font-bold text-purple-200">ឥតគិតថ្លៃ ១០០% (Free of Charge)</p>
+                    <p className="text-[10px] text-purple-300/80">
+                      អតិថិជនមិនបាច់បង់ប្រាក់ ({formatKhr(subtotalKhr)} / {formatUsd(subtotalUsd)})
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-black font-mono text-emerald-400">0 ៛</span>
+              </div>
+            )}
+          </div>
+
+          {/* Payment & Totals Section */}
+          <div className="pt-2 border-t border-slate-800 space-y-2">
+            {/* Payment Method Selector or Free banner */}
+            {grandTotalUsd === 0 ? (
+              <div className="p-2.5 rounded-xl bg-purple-950/50 border border-purple-500/40 text-center text-xs font-bold text-purple-200 flex items-center justify-center gap-1.5 shadow-xs">
+                <span>🎁</span>
+                <span>ការបញ្ជាទិញឥតគិតថ្លៃ (Free of Charge) — មិនទាមទារការបង់ប្រាក់</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('cash_khr')}
+                  className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'cash_khr'
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                    }`}
+                >
+                  លុយរៀល (KHR)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('cash_usd')}
+                  className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'cash_usd'
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm font-bold'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                    }`}
+                >
+                  លុយដុល្លារ ($)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('khqr')}
+                  className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'khqr'
+                      ? 'bg-cyan-600 text-white border-cyan-500 shadow-sm font-bold'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                    }`}
+                >
+                  KHQR Scan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('credit')}
+                  className={`py-2 px-2 rounded-xl border transition text-center ${paymentMethod === 'credit'
+                      ? 'bg-rose-600 text-white border-rose-500 shadow-sm font-bold'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                    }`}
+                >
+                  ជំពាក់ (Credit)
+                </button>
+              </div>
+            )}
+
+            {/* Subtotal & Discount row if discount applied */}
+            {effectiveDiscountUsd > 0 && (
+              <div className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-[11px]">
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <span>សរុបបឋម:</span>
+                  <span className="font-mono text-slate-300 font-bold">{formatUsd(subtotalUsd)}</span>
+                  <span className="text-[10px] text-slate-500">({formatKhr(subtotalKhr)})</span>
+                </div>
+                <div className="flex items-center gap-1 text-rose-400 font-bold font-mono">
+                  <span>បញ្ចុះ:</span>
+                  <span>-{formatUsd(effectiveDiscountUsd)}</span>
+                  <span className="text-[10px] text-rose-300/80 font-normal">(-{formatKhr(effectiveDiscountKhr)})</span>
+                </div>
+              </div>
+            )}
 
             {/* Grand Total Display */}
             <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
@@ -790,6 +1038,11 @@ export const PosView: React.FC<PosViewProps> = ({
                 <span className="text-[10px] text-emerald-400 font-bold">
                   ({formatKhr(grandTotalKhr)})
                 </span>
+                {discountMode === 'free' && (
+                  <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-300 font-bold">
+                    ឥតគិតថ្លៃ
+                  </span>
+                )}
               </p>
             </div>
           </div>

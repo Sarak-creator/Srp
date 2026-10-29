@@ -116,9 +116,26 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
                 <span>${order.subtotalUsd.toFixed(2)}</span>
               </div>
               {order.discountUsd > 0 && (
-                <div className="flex justify-between text-slate-700">
-                  <span>បញ្ចុះតម្លៃ (Discount):</span>
-                  <span>-${order.discountUsd.toFixed(2)}</span>
+                <div className="flex justify-between text-slate-800 font-bold">
+                  <span>
+                    បញ្ចុះតម្លៃ{' '}
+                    {order.discountType === 'free'
+                      ? '(ឥតគិតថ្លៃ 100%)'
+                      : order.discountType === 'percent'
+                      ? `(${order.discountValue}%)`
+                      : order.discountType === 'khr'
+                      ? `(${formatKhr(order.discountKhr || 0)})`
+                      : '(Discount)'}:
+                  </span>
+                  <span className="font-bold text-rose-600">
+                    -${order.discountUsd.toFixed(2)}
+                    {order.discountKhr ? ` (-${formatKhr(order.discountKhr)})` : ''}
+                  </span>
+                </div>
+              )}
+              {order.grandTotalUsd === 0 && (
+                <div className="my-1.5 py-1 text-center bg-emerald-50 border border-emerald-300 rounded text-emerald-800 font-black text-xs">
+                  🎉 វិក្កយបត្រឥតគិតថ្លៃ (FREE OF CHARGE)
                 </div>
               )}
               <div className="flex justify-between text-[12px] font-bold border-t border-slate-300 pt-1">
@@ -139,10 +156,15 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
                 <div className="flex justify-between text-slate-700">
                   <span>វិធីទូទាត់:</span>
                   <span className="font-semibold uppercase">
-                    {order.paymentMethod === 'cash_khr' && 'លុយរៀល (Cash KHR)'}
-                    {order.paymentMethod === 'cash_usd' && 'លុយដុល្លារ (Cash USD)'}
-                    {order.paymentMethod === 'khqr' && 'ស្កេន KHQR'}
-                    {order.paymentMethod === 'credit' && 'ជំពាក់ (Credit)'}
+                    {order.grandTotalUsd === 0
+                      ? 'ឥតគិតថ្លៃ (FREE / FOC)'
+                      : order.paymentMethod === 'cash_khr'
+                      ? 'លុយរៀល (Cash KHR)'
+                      : order.paymentMethod === 'cash_usd'
+                      ? 'លុយដុល្លារ (Cash USD)'
+                      : order.paymentMethod === 'khqr'
+                      ? 'ស្កេន KHQR'
+                      : 'ជំពាក់ (Credit)'}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-700">

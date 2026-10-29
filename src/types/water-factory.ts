@@ -59,6 +59,8 @@ export interface OrderItem {
   totalKhr: number;
 }
 
+export type DiscountType = 'none' | 'percent' | 'khr' | 'free' | 'usd';
+
 export interface Order {
   id: string;
   invoiceNumber: string;
@@ -73,6 +75,9 @@ export interface Order {
   exchangeRate: number;
   subtotalUsd: number;
   discountUsd: number;
+  discountKhr?: number;
+  discountType?: DiscountType;
+  discountValue?: number;
   grandTotalUsd: number;
   grandTotalKhr: number;
   paidAmountUsd: number;
