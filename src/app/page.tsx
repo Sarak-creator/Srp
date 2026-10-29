@@ -153,6 +153,7 @@ export default function AppHome() {
       );
       setCustomers(updatedCustomers);
       StorageService.saveCustomers(updatedCustomers);
+      await SupabaseService.saveCustomer(updatedCustomer);
     }
 
     // Persist to Supabase Cloud Database

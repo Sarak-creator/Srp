@@ -192,8 +192,9 @@ export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({
         settings={settings}
         previousEmptyBalance={selectedOrder?.previousEmptyContainersHeld}
         customerEmptyBalance={
-          selectedOrder?.totalEmptyContainersHeld ??
-          customers.find((c) => c.id === selectedOrder?.customerId)?.emptyContainersHeld
+          selectedOrder?.totalEmptyContainersHeld && selectedOrder.totalEmptyContainersHeld > 0
+            ? selectedOrder.totalEmptyContainersHeld
+            : customers.find((c) => c.id === selectedOrder?.customerId)?.emptyContainersHeld
         }
         isOpen={isReceiptOpen}
         onClose={() => setIsReceiptOpen(false)}

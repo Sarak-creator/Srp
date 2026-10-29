@@ -1,4 +1,4 @@
-import { Order, CustomerPayment, BrokenProduct, SystemSettings } from '@/types/water-factory';
+import { Order, CustomerPayment, BrokenProduct, SystemSettings, is20LBottleProduct } from '@/types/water-factory';
 import { formatUsd, formatKhr } from './financial-engine';
 
 /**
@@ -193,13 +193,22 @@ export function buildOrderTelegramMessage(order: Order, settings: SystemSettings
     }
   }
 
-  const delivered = order.containersDelivered20L || 0;
+  let delivered = order.containersDelivered20L || 0;
+  if (delivered === 0 && order.items && order.items.length > 0) {
+    delivered = order.items
+      .filter((i) => is20LBottleProduct({ unit: i.unit, nameKh: i.productNameKh }))
+      .reduce((sum, i) => sum + i.quantity, 0);
+  }
   const returned = order.containersReturned20L || 0;
-  const prevHeld = order.previousEmptyContainersHeld !== undefined ? order.previousEmptyContainersHeld : 0;
+  const prevHeld =
+    order.previousEmptyContainersHeld !== undefined && order.previousEmptyContainersHeld > 0
+      ? order.previousEmptyContainersHeld
+      : 0;
+  const netChange = delivered - returned;
   const totalHeld =
-    order.totalEmptyContainersHeld !== undefined
+    order.totalEmptyContainersHeld !== undefined && order.totalEmptyContainersHeld > 0
       ? order.totalEmptyContainersHeld
-      : Math.max(0, prevHeld + delivered - returned);
+      : Math.max(0, prevHeld + netChange);
 
   let bottleText = '';
   if (delivered > 0 || returned > 0 || prevHeld > 0 || totalHeld > 0) {

@@ -46,6 +46,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [emptyContainersHeld, setEmptyContainersHeld] = useState('0');
 
   const filteredCustomers = customers.filter(
     (c) =>
@@ -63,6 +64,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     setPhoneNumber('');
     setDeliveryAddress('');
     setNotes('');
+    setEmptyContainersHeld('0');
     setIsCustomerModalOpen(true);
   };
 
@@ -72,6 +74,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
     setPhoneNumber(c.phoneNumber);
     setDeliveryAddress(c.deliveryAddress);
     setNotes(c.notes || '');
+    setEmptyContainersHeld((c.emptyContainersHeld || 0).toString());
     setIsCustomerModalOpen(true);
   };
 
@@ -89,7 +92,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
       deliveryAddress: deliveryAddress.trim() || 'ភ្នំពេញ',
       totalDebtUsd: editingCustomer ? editingCustomer.totalDebtUsd : 0,
       totalDebtKhr: editingCustomer ? editingCustomer.totalDebtKhr : 0,
-      emptyContainersHeld: editingCustomer ? editingCustomer.emptyContainersHeld : 0,
+      emptyContainersHeld: Math.max(0, parseInt(emptyContainersHeld) || 0),
       notes: notes.trim() || undefined,
       isActive: true,
       createdAt: editingCustomer ? editingCustomer.createdAt : new Date().toISOString(),
@@ -292,6 +295,23 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
                 rows={2}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                ចំនួនសំបកធុង ២០L កំពុងជំពាក់/កាន់កាប់ (Empty Bottles Held)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={emptyContainersHeld}
+                  onChange={(e) => setEmptyContainersHeld(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-500"
+                  placeholder="0"
+                />
+                <span className="absolute right-3 top-2 text-xs text-slate-500 font-bold">ធុង</span>
+              </div>
             </div>
 
             <div>

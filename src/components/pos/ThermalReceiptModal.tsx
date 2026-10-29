@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Printer, X } from 'lucide-react';
-import { Order, SystemSettings } from '@/types/water-factory';
+import { Order, SystemSettings, is20LBottleProduct } from '@/types/water-factory';
 import { formatUsd, formatKhr } from '@/lib/financial-engine';
 
 interface ThermalReceiptModalProps {
@@ -28,27 +28,33 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     window.print();
   };
 
-  const delivered = order.containersDelivered20L || 0;
+  let delivered = order.containersDelivered20L || 0;
+  if (delivered === 0 && order.items && order.items.length > 0) {
+    delivered = order.items
+      .filter((i) => is20LBottleProduct({ unit: i.unit, nameKh: i.productNameKh }))
+      .reduce((sum, i) => sum + i.quantity, 0);
+  }
   const returned = order.containersReturned20L || 0;
 
   // Previous Held calculation
   let previousHeld = 0;
-  if (order.previousEmptyContainersHeld !== undefined) {
+  if (order.previousEmptyContainersHeld !== undefined && order.previousEmptyContainersHeld > 0) {
     previousHeld = order.previousEmptyContainersHeld;
-  } else if (previousEmptyBalance !== undefined) {
+  } else if (previousEmptyBalance !== undefined && previousEmptyBalance > 0) {
     previousHeld = previousEmptyBalance;
-  } else if (customerEmptyBalance !== undefined) {
+  } else if (customerEmptyBalance !== undefined && customerEmptyBalance > 0) {
     previousHeld = Math.max(0, customerEmptyBalance - (delivered - returned));
   }
 
-  // Total Held calculation
-  let totalHeld = 0;
-  if (order.totalEmptyContainersHeld !== undefined) {
+  // Total Held calculation (Total Held = Previous Held + Delivered - Returned)
+  const netChange = delivered - returned;
+  const calculatedTotal = Math.max(0, previousHeld + netChange);
+
+  let totalHeld = calculatedTotal;
+  if (order.totalEmptyContainersHeld !== undefined && order.totalEmptyContainersHeld > 0) {
     totalHeld = order.totalEmptyContainersHeld;
-  } else if (customerEmptyBalance !== undefined) {
+  } else if (customerEmptyBalance !== undefined && customerEmptyBalance > 0 && totalHeld === 0) {
     totalHeld = customerEmptyBalance;
-  } else {
-    totalHeld = Math.max(0, previousHeld + delivered - returned);
   }
 
   const shouldShowBottleLedger =

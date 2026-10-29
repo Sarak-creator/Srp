@@ -35,6 +35,7 @@ import {
   UserAccount,
   ContainerUnitItem,
   DiscountType,
+  is20LBottleProduct,
 } from '@/types/water-factory';
 import { generateUuid } from '@/lib/supabase-service';
 import {
@@ -95,6 +96,7 @@ export const PosView: React.FC<PosViewProps> = ({
   const [newCustName, setNewCustName] = useState('');
   const [newCustPhone, setNewCustPhone] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
+  const [newCustInitialBottles, setNewCustInitialBottles] = useState('0');
 
   // Receipt Modal State
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
@@ -198,7 +200,7 @@ export const PosView: React.FC<PosViewProps> = ({
     }
 
     // Auto-update 20L delivered count if 20L product
-    if (product.isRefill20l) {
+    if (is20LBottleProduct(product)) {
       setContainersDelivered20L((prev) => prev + 1);
     }
   };
@@ -226,7 +228,7 @@ export const PosView: React.FC<PosViewProps> = ({
       });
       setCart(updated);
 
-      if (item.product.isRefill20l) {
+      if (is20LBottleProduct(item.product)) {
         setContainersDelivered20L((prev) => Math.max(0, prev + delta));
       }
     }
@@ -235,7 +237,7 @@ export const PosView: React.FC<PosViewProps> = ({
   // Remove Cart Item
   const handleRemoveItem = (productId: string) => {
     const item = cart.find((i) => i.productId === productId);
-    if (item && item.product.isRefill20l) {
+    if (item && is20LBottleProduct(item.product)) {
       setContainersDelivered20L((prev) => Math.max(0, prev - item.quantity));
     }
     setCart(cart.filter((i) => i.productId !== productId));
@@ -265,7 +267,7 @@ export const PosView: React.FC<PosViewProps> = ({
       deliveryAddress: newCustAddress.trim() || 'ភ្នំពេញ',
       totalDebtUsd: 0,
       totalDebtKhr: 0,
-      emptyContainersHeld: 0,
+      emptyContainersHeld: Math.max(0, parseInt(newCustInitialBottles) || 0),
       isActive: true,
       createdAt: new Date().toISOString(),
     };
@@ -276,6 +278,7 @@ export const PosView: React.FC<PosViewProps> = ({
     setNewCustName('');
     setNewCustPhone('');
     setNewCustAddress('');
+    setNewCustInitialBottles('0');
   };
 
   // Checkout Execution
@@ -308,8 +311,15 @@ export const PosView: React.FC<PosViewProps> = ({
     }
 
     // Customer empty balance difference & history snapshot
-    const previousHeld = selectedCustomer.emptyContainersHeld || 0;
-    const netBottleChange = containersDelivered20L - containersReturned20L;
+    const autoDelivered20L = cart
+      .filter((item) => is20LBottleProduct(item.product))
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    const effectiveDelivered20L =
+      containersDelivered20L > 0 ? containersDelivered20L : autoDelivered20L;
+
+    const previousHeld = selectedCustomer?.emptyContainersHeld || 0;
+    const netBottleChange = effectiveDelivered20L - containersReturned20L;
     const totalHeld = Math.max(0, previousHeld + netBottleChange);
 
     const newOrder: Order = {
@@ -334,7 +344,7 @@ export const PosView: React.FC<PosViewProps> = ({
       paidAmountUsd: paidUsd,
       paidAmountKhr: paidKhr,
       remainingDebtUsd,
-      containersDelivered20L,
+      containersDelivered20L: effectiveDelivered20L,
       containersReturned20L,
       previousEmptyContainersHeld: previousHeld,
       totalEmptyContainersHeld: totalHeld,
@@ -1118,6 +1128,23 @@ export const PosView: React.FC<PosViewProps> = ({
                 placeholder="ឧ. សង្កាត់ចោមចៅ ភ្នំពេញ"
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                សំបកធុង ២០L ជំពាក់ពីមុន (ស្រេចចិត្ត)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={newCustInitialBottles}
+                  onChange={(e) => setNewCustInitialBottles(e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-500"
+                />
+                <span className="absolute right-3 top-2 text-xs text-slate-500 font-bold">ធុង</span>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">

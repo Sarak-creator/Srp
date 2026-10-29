@@ -32,6 +32,33 @@ export interface Product {
   isActive: boolean;
 }
 
+export const is20LBottleProduct = (product?: {
+  isRefill20l?: boolean;
+  unit?: string;
+  nameKh?: string;
+  nameEn?: string;
+} | null): boolean => {
+  if (!product) return false;
+  if (product.isRefill20l) return true;
+  const unit = (product.unit || '').toLowerCase();
+  if (
+    unit === 'container_20l' ||
+    unit.includes('20l') ||
+    unit.includes('20_l') ||
+    unit === '20l' ||
+    unit === 'container' ||
+    unit === 'barrel' ||
+    unit === 'can'
+  ) {
+    return true;
+  }
+  const nameKh = product.nameKh || '';
+  if (nameKh.includes('២០') || nameKh.includes('20')) return true;
+  const nameEn = (product.nameEn || '').toLowerCase();
+  if (nameEn.includes('20l') || nameEn.includes('20 l') || nameEn.includes('refill')) return true;
+  return false;
+};
+
 export interface Customer {
   id: string;
   customerCode: string;
