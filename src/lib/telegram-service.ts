@@ -193,16 +193,17 @@ export function buildOrderTelegramMessage(order: Order, settings: SystemSettings
     }
   }
 
-  const bottleDiff = (order.containersDelivered20L || 0) - (order.containersReturned20L || 0);
+  const delivered = order.containersDelivered20L || 0;
+  const returned = order.containersReturned20L || 0;
+  const prevHeld = order.previousEmptyContainersHeld !== undefined ? order.previousEmptyContainersHeld : 0;
+  const totalHeld =
+    order.totalEmptyContainersHeld !== undefined
+      ? order.totalEmptyContainersHeld
+      : Math.max(0, prevHeld + delivered - returned);
+
   let bottleText = '';
-  if (order.containersDelivered20L > 0 || order.containersReturned20L > 0) {
-    const changeBadge =
-      bottleDiff > 0
-        ? `ជំពាក់ថែម +${bottleDiff}`
-        : bottleDiff < 0
-        ? `សងរួច ${Math.abs(bottleDiff)}`
-        : `ស្មើ (0)`;
-    bottleText = `\n🔄 <b>សំបកធុង ២០L:</b> យក ${order.containersDelivered20L} / សង ${order.containersReturned20L} (${changeBadge})`;
+  if (delivered > 0 || returned > 0 || prevHeld > 0 || totalHeld > 0) {
+    bottleText = `\n🔄 <b>ចរន្តសំបកធុង ២០L (Bottle Ledger):</b>\n  • ជំពាក់ពីមុន: ${prevHeld} ធុង\n  • ដឹកជញ្ជូន (Delivered): +${delivered} ធុង\n  • យកត្រឡប់ (Returned): -${returned} ធុង\n  • <b>សំបកធុងនៅជំពាក់សរុប (Total Held): ${totalHeld} ធុង</b>`;
   }
 
   let debtText = '';

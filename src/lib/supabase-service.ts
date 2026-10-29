@@ -421,6 +421,12 @@ export const SupabaseService = {
           remainingDebtUsd: Number(row.remaining_debt_usd || 0),
           containersDelivered20L: Number(row.containers_delivered_20l || 0),
           containersReturned20L: Number(row.containers_returned_20l || 0),
+          previousEmptyContainersHeld: row.previous_empty_containers_held !== undefined && row.previous_empty_containers_held !== null
+            ? Number(row.previous_empty_containers_held)
+            : undefined,
+          totalEmptyContainersHeld: row.total_empty_containers_held !== undefined && row.total_empty_containers_held !== null
+            ? Number(row.total_empty_containers_held)
+            : undefined,
           items,
           notes: row.notes || undefined,
         };
@@ -438,32 +444,49 @@ export const SupabaseService = {
       const cashierId = isUuid(cashierUserId) ? cashierUserId : null;
 
       // 1. Insert Order
-      const { data: orderData, error: orderErr } = await supabase
+      const orderPayload: Record<string, any> = {
+        id: orderId,
+        invoice_number: order.invoiceNumber,
+        customer_id: customerId,
+        cashier_id: cashierId,
+        order_date: order.orderDate || new Date().toISOString(),
+        status: order.status || 'completed',
+        payment_status: order.paymentStatus || 'paid',
+        exchange_rate_applied: order.exchangeRate,
+        subtotal_usd: order.subtotalUsd,
+        discount_usd: order.discountUsd,
+        grand_total_usd: order.grandTotalUsd,
+        grand_total_khr: order.grandTotalKhr,
+        paid_amount_usd: order.paidAmountUsd,
+        paid_amount_khr: order.paidAmountKhr,
+        remaining_debt_usd: order.remainingDebtUsd,
+        containers_delivered_20l: order.containersDelivered20L,
+        containers_returned_20l: order.containersReturned20L,
+        previous_empty_containers_held: order.previousEmptyContainersHeld || 0,
+        total_empty_containers_held: order.totalEmptyContainersHeld || 0,
+        net_containers_difference: order.containersDelivered20L - order.containersReturned20L,
+        payment_method: order.paymentMethod,
+        notes: order.notes || null,
+      };
+
+      let { data: orderData, error: orderErr } = await supabase
         .from('orders')
-        .insert({
-          id: orderId,
-          invoice_number: order.invoiceNumber,
-          customer_id: customerId,
-          cashier_id: cashierId,
-          order_date: order.orderDate || new Date().toISOString(),
-          status: order.status || 'completed',
-          payment_status: order.paymentStatus || 'paid',
-          exchange_rate_applied: order.exchangeRate,
-          subtotal_usd: order.subtotalUsd,
-          discount_usd: order.discountUsd,
-          grand_total_usd: order.grandTotalUsd,
-          grand_total_khr: order.grandTotalKhr,
-          paid_amount_usd: order.paidAmountUsd,
-          paid_amount_khr: order.paidAmountKhr,
-          remaining_debt_usd: order.remainingDebtUsd,
-          containers_delivered_20l: order.containersDelivered20L,
-          containers_returned_20l: order.containersReturned20L,
-          net_containers_difference: order.containersDelivered20L - order.containersReturned20L,
-          payment_method: order.paymentMethod,
-          notes: order.notes || null,
-        })
+        .insert(orderPayload)
         .select()
         .single();
+
+      // Fallback if column does not exist yet in live Supabase database
+      if (orderErr && (orderErr.message?.includes('column') || orderErr.code === '42703')) {
+        console.warn('Bottle ledger columns might not exist yet in orders table, retrying base fields:', orderErr.message);
+        const { previous_empty_containers_held, total_empty_containers_held, ...basePayload } = orderPayload;
+        const retry = await supabase
+          .from('orders')
+          .insert(basePayload)
+          .select()
+          .single();
+        orderData = retry.data;
+        orderErr = retry.error;
+      }
 
       if (orderErr) {
         console.error('Error inserting order in Supabase:', orderErr.message);

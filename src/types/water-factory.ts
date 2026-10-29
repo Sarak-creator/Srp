@@ -85,6 +85,8 @@ export interface Order {
   remainingDebtUsd: number;
   containersDelivered20L: number;
   containersReturned20L: number;
+  previousEmptyContainersHeld?: number;
+  totalEmptyContainersHeld?: number;
   items: OrderItem[];
   notes?: string;
 }

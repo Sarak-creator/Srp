@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { Search, Printer, Ban, Receipt, CheckCircle, Clock, Trash2 } from 'lucide-react';
-import { Order, SystemSettings } from '@/types/water-factory';
+import { Order, SystemSettings, Customer } from '@/types/water-factory';
 import { formatUsd, formatKhr } from '@/lib/financial-engine';
 import { ThermalReceiptModal } from '../pos/ThermalReceiptModal';
 
 interface OrderHistoryViewProps {
   orders: Order[];
   settings: SystemSettings;
+  customers?: Customer[];
   onCancelOrder: (orderId: string) => void;
   onDeleteOrder: (orderId: string) => void;
 }
@@ -16,6 +17,7 @@ interface OrderHistoryViewProps {
 export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({
   orders,
   settings,
+  customers = [],
   onCancelOrder,
   onDeleteOrder,
 }) => {
@@ -188,6 +190,11 @@ export const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({
       <ThermalReceiptModal
         order={selectedOrder}
         settings={settings}
+        previousEmptyBalance={selectedOrder?.previousEmptyContainersHeld}
+        customerEmptyBalance={
+          selectedOrder?.totalEmptyContainersHeld ??
+          customers.find((c) => c.id === selectedOrder?.customerId)?.emptyContainersHeld
+        }
         isOpen={isReceiptOpen}
         onClose={() => setIsReceiptOpen(false)}
       />

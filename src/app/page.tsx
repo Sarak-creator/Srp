@@ -531,6 +531,7 @@ export default function AppHome() {
             <OrderHistoryView
               orders={orders}
               settings={settings}
+              customers={customers}
               onCancelOrder={handleCancelOrder}
               onDeleteOrder={handleDeleteOrder}
             />

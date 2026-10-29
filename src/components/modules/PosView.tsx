@@ -307,6 +307,11 @@ export const PosView: React.FC<PosViewProps> = ({
       paymentStatus = totalPaidInUsdEquivalent > 0 ? 'partial' : 'unpaid';
     }
 
+    // Customer empty balance difference & history snapshot
+    const previousHeld = selectedCustomer.emptyContainersHeld || 0;
+    const netBottleChange = containersDelivered20L - containersReturned20L;
+    const totalHeld = Math.max(0, previousHeld + netBottleChange);
+
     const newOrder: Order = {
       id: generateUuid(),
       invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
@@ -331,14 +336,14 @@ export const PosView: React.FC<PosViewProps> = ({
       remainingDebtUsd,
       containersDelivered20L,
       containersReturned20L,
+      previousEmptyContainersHeld: previousHeld,
+      totalEmptyContainersHeld: totalHeld,
       items: cart.map(({ product, ...item }) => item),
       notes: discountMode === 'free'
         ? (orderNotes.trim() ? `${orderNotes.trim()} [ឥតគិតថ្លៃ]` : 'ឥតគិតថ្លៃ (Free of Charge)')
         : (orderNotes.trim() || undefined),
     };
 
-    // Customer empty balance difference
-    const netBottleChange = containersDelivered20L - containersReturned20L;
     const updatedCustomer: Customer = {
       ...selectedCustomer,
       totalDebtUsd: Number((selectedCustomer.totalDebtUsd + remainingDebtUsd).toFixed(2)),
@@ -346,7 +351,7 @@ export const PosView: React.FC<PosViewProps> = ({
         selectedCustomer.totalDebtUsd + remainingDebtUsd,
         settings.exchangeRateKhrPerUsd
       ),
-      emptyContainersHeld: Math.max(0, selectedCustomer.emptyContainersHeld + netBottleChange),
+      emptyContainersHeld: totalHeld,
     };
 
     onCompleteOrder(newOrder, updatedCustomer);
@@ -681,7 +686,7 @@ export const PosView: React.FC<PosViewProps> = ({
                 ចរន្តសំបកធុង ២០L (Empty Bottle Exchange)
               </span>
               <span className="text-[10px] text-cyan-400 font-normal">
-                សល់ចុងក្រោយ: {selectedCustomer.emptyContainersHeld + (containersDelivered20L - containersReturned20L)} ធុង
+                ជំពាក់សរុប: {Math.max(0, (selectedCustomer.emptyContainersHeld || 0) + (containersDelivered20L - containersReturned20L))} ធុង
               </span>
             </div>
 
@@ -731,6 +736,16 @@ export const PosView: React.FC<PosViewProps> = ({
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Live calculation breakdown */}
+            <div className="pt-1.5 border-t border-cyan-800/30 flex items-center justify-between text-[10px] text-slate-300">
+              <span>ជំពាក់ចាស់: <b className="text-white">{selectedCustomer.emptyContainersHeld || 0}</b></span>
+              <span>+ ដឹកជញ្ជូន: <b className="text-cyan-300">+{containersDelivered20L}</b></span>
+              <span>- យកត្រឡប់: <b className="text-emerald-400">-{containersReturned20L}</b></span>
+              <span className="font-bold text-amber-300">
+                = សរុប: {Math.max(0, (selectedCustomer.emptyContainersHeld || 0) + (containersDelivered20L - containersReturned20L))} ធុង
+              </span>
             </div>
           </div>
 
@@ -1128,7 +1143,8 @@ export const PosView: React.FC<PosViewProps> = ({
       <ThermalReceiptModal
         order={completedOrder}
         settings={settings}
-        customerEmptyBalance={selectedCustomer.emptyContainersHeld + (containersDelivered20L - containersReturned20L)}
+        previousEmptyBalance={completedOrder?.previousEmptyContainersHeld}
+        customerEmptyBalance={completedOrder?.totalEmptyContainersHeld}
         isOpen={isReceiptModalOpen}
         onClose={() => setIsReceiptModalOpen(false)}
       />

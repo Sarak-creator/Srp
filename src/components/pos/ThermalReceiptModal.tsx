@@ -9,6 +9,7 @@ interface ThermalReceiptModalProps {
   order: Order | null;
   settings: SystemSettings;
   customerEmptyBalance?: number;
+  previousEmptyBalance?: number;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -16,7 +17,8 @@ interface ThermalReceiptModalProps {
 export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   order,
   settings,
-  customerEmptyBalance = 0,
+  customerEmptyBalance,
+  previousEmptyBalance,
   isOpen,
   onClose,
 }) => {
@@ -25,6 +27,32 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   const handlePrint = () => {
     window.print();
   };
+
+  const delivered = order.containersDelivered20L || 0;
+  const returned = order.containersReturned20L || 0;
+
+  // Previous Held calculation
+  let previousHeld = 0;
+  if (order.previousEmptyContainersHeld !== undefined) {
+    previousHeld = order.previousEmptyContainersHeld;
+  } else if (previousEmptyBalance !== undefined) {
+    previousHeld = previousEmptyBalance;
+  } else if (customerEmptyBalance !== undefined) {
+    previousHeld = Math.max(0, customerEmptyBalance - (delivered - returned));
+  }
+
+  // Total Held calculation
+  let totalHeld = 0;
+  if (order.totalEmptyContainersHeld !== undefined) {
+    totalHeld = order.totalEmptyContainersHeld;
+  } else if (customerEmptyBalance !== undefined) {
+    totalHeld = customerEmptyBalance;
+  } else {
+    totalHeld = Math.max(0, previousHeld + delivered - returned);
+  }
+
+  const shouldShowBottleLedger =
+    delivered > 0 || returned > 0 || previousHeld > 0 || totalHeld > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
@@ -183,22 +211,34 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             </div>
 
             {/* 20L Empty Bottle Ledger Section */}
-            {(order.containersDelivered20L > 0 || order.containersReturned20L > 0 || customerEmptyBalance > 0) && (
-              <div className="my-2 p-1.5 border border-slate-900 rounded bg-slate-50 text-[10px] space-y-0.5">
-                <div className="font-bold text-center border-b border-slate-300 pb-0.5 text-slate-900">
+            {shouldShowBottleLedger && (
+              <div className="my-2 p-1.5 border border-slate-900 rounded bg-slate-50 text-[10px] space-y-1">
+                <div className="font-bold text-center border-b border-slate-300 pb-0.5 text-slate-900 uppercase tracking-tight">
                   ចរន្តសំបកធុង ២០លីត្រ (20L BOTTLE LEDGER)
                 </div>
-                <div className="flex justify-between">
-                  <span>ធុងទឹកបានដឹកជញ្ជូន (Delivered):</span>
-                  <span className="font-bold">+{order.containersDelivered20L} ធុង</span>
+                <div className="space-y-0.5 pt-0.5">
+                  <div className="flex justify-between text-slate-800">
+                    <span>ចំនួនធុងជំពាក់ពីមុន (Previous Held):</span>
+                    <span className="font-bold text-slate-900">{previousHeld} ធុង</span>
+                  </div>
+                  <div className="flex justify-between text-slate-800">
+                    <span>ធុងទឹកបានដឹកជញ្ជូន (Delivered):</span>
+                    <span className="font-bold text-blue-700">+{delivered} ធុង</span>
+                  </div>
+                  <div className="flex justify-between text-slate-800">
+                    <span>សំបកធុងយកត្រឡប់ (Returned):</span>
+                    <span className="font-bold text-emerald-700">-{returned} ធុង</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>សំបកធុងយកត្រឡប់ (Returned):</span>
-                  <span className="font-bold">-{order.containersReturned20L} ធុង</span>
-                </div>
-                <div className="flex justify-between border-t border-slate-300 pt-0.5 font-bold text-[11px] text-slate-900">
+
+                <div className="flex justify-between border-t border-slate-300 pt-1 font-bold text-[11px] text-slate-900">
                   <span>សំបកធុងនៅជំពាក់សរុប (Total Held):</span>
-                  <span className="px-1.5 py-0.2 bg-slate-200 rounded">{customerEmptyBalance} ធុង</span>
+                  <span className="px-2 py-0.5 bg-slate-200 border border-slate-300 rounded font-black text-slate-950">
+                    {totalHeld} ធុង
+                  </span>
+                </div>
+                <div className="text-[9px] text-center text-slate-500 italic pt-0.5 border-t border-dotted border-slate-300">
+                  (គណនា៖ ជំពាក់ពីមុន {previousHeld} + ដឹកជញ្ជូន {delivered} - យកត្រឡប់ {returned} = {totalHeld})
                 </div>
               </div>
             )}
