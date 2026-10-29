@@ -433,7 +433,7 @@ export default function AppHome() {
   const emptyBottleHoldersCount = customers.filter((c) => c.emptyContainersHeld > 0).length;
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
+    <div className="h-[100dvh] min-h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
       {/* Top Header Bar */}
       <HeaderBar
         settings={settings}

@@ -359,8 +359,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={onCloseMobile}
           />
 
-          {/* Drawer Content */}
-          <aside className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col h-full z-10 shadow-2xl overflow-hidden overflow-x-hidden">
+          {/* Drawer Content with Safe Area Notch padding */}
+          <aside className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col h-full z-10 shadow-2xl overflow-hidden overflow-x-hidden pt-[env(safe-area-inset-top,0px)]">
             {/* Mobile Header with Logo */}
             <div className="p-4 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
               <SrpLogo size={34} showText={true} subtitle="គ្រប់គ្រងម៉ឺនុយទាំងអស់" />

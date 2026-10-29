@@ -17,6 +17,22 @@
   }
 }
 
+/* Safe Area Notch & Cutout Handling */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+.safe-top-pt {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -57,7 +57,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   ];
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/80 px-2 flex items-center justify-around shadow-2xl safe-area-pb">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-[calc(4rem+env(safe-area-inset-bottom,0px))] pb-[env(safe-area-inset-bottom,0px)] bg-slate-900/95 backdrop-blur-xl border-t border-slate-800/80 px-2 flex items-center justify-around shadow-2xl safe-bottom-pb">
       {primaryTabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeModule === tab.id;
