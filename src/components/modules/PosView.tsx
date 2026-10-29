@@ -558,8 +558,9 @@ export const PosView: React.FC<PosViewProps> = ({
 
         {/* RIGHT: POS Order Cart & Checkout (5 Cols on desktop, full on mobile when cart active) */}
         <div
-          className={`lg:col-span-5 flex flex-col h-auto lg:h-full bg-slate-900/90 rounded-3xl border border-slate-800 p-3 sm:p-4 overflow-hidden ${posMobileTab === 'cart' ? 'flex' : 'hidden lg:flex'
-            }`}
+          className={`lg:col-span-5 flex flex-col h-[calc(100vh-14rem)] lg:h-full bg-slate-900/90 rounded-3xl border border-slate-800 p-3 sm:p-4 overflow-y-auto overflow-x-hidden ${
+            posMobileTab === 'cart' ? 'flex' : 'hidden lg:flex'
+          }`}
         >
           {/* Mobile Back Button to Catalog */}
           <div className="lg:hidden pb-2.5 mb-2 border-b border-slate-800 flex items-center justify-between">
@@ -623,10 +624,10 @@ export const PosView: React.FC<PosViewProps> = ({
           )}
 
           {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto py-2 space-y-2 pr-1">
+          <div className="py-2 space-y-2 pr-1 max-h-56 sm:max-h-64 overflow-y-auto shrink-0">
             {cart.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-500 text-xs">
-                <Droplets className="w-10 h-10 text-slate-700 mb-2" />
+              <div className="py-6 flex flex-col items-center justify-center text-slate-500 text-xs">
+                <Droplets className="w-8 h-8 text-slate-700 mb-1.5" />
                 <p>មិនទាន់មានទំនិញក្នុងកន្ត្រកទេ។</p>
                 <p className="text-[10px] text-slate-600">សូមចុចលើផលិតផលនៅខាងឆ្វេង</p>
               </div>
@@ -1000,12 +1001,12 @@ export const PosView: React.FC<PosViewProps> = ({
               </div>
             </div>
 
-            {/* Actions: Clear & Checkout */}
-            <div className="flex gap-2">
+            {/* Actions: Clear & Checkout (Sticky at bottom so never lost when scrolling) */}
+            <div className="sticky bottom-0 pt-2 pb-1 bg-slate-900/95 backdrop-blur-md flex gap-2 border-t border-slate-800/80 mt-2 z-10">
               <button
                 onClick={handleClearCart}
                 disabled={cart.length === 0}
-                className="px-3.5 py-2.5 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-xl transition"
+                className="px-3.5 py-2.5 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-40 rounded-xl transition shrink-0"
                 title="លុបកន្ត្រក"
               >
                 <RotateCcw className="w-4 h-4" />
